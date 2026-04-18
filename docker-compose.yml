@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. DATABASE LƯU TRỮ
   mariadb:
     image: mariadb:10.11
     environment:
@@ -12,17 +13,19 @@ services:
       - mariadb-data:/var/lib/mysql
     restart: unless-stopped
 
+  # 2. LÕI XỬ LÝ LOGIC (PLUGNMEET SERVER)
   plugnmeet-server:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
-    # Dùng chuẩn volumes của hãng, vì đã có file config.yaml trên Github nên Docker sẽ không sinh thư mục rác nữa
     volumes:
-      - ./config.yaml:/app/config.yaml
+      # CÚ LỪA DOCKER: Dùng file tn_config.yaml mới tinh đắp vào máy chủ
+      - ./tn_config.yaml:/app/config.yaml
     expose:
       - "8080"
     restart: unless-stopped
 
+  # 3. GIAO DIỆN NGƯỜI DÙNG (NGINX TẢI TRỰC TIẾP ZIP v2.1.7 TỪ GITHUB)
   plugnmeet-client:
     image: nginx:alpine
     command: >
