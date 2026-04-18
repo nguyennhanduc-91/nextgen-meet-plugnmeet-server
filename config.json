@@ -1,0 +1,32 @@
+{
+  "code": 200,
+  "msg": "success",
+  "status": true,
+  "app_name": "NextGen Meet",
+  "copyright": "Thanh Nguyen Group",
+  "logo": "assets/logo.png",
+  "theme": {
+    "primary_color": "#dc2626",
+    "secondary_color": "#ef4444",
+    "background_color": "#09090b",
+    "custom_css_url": ""
+  },
+  "design": {
+    "colors": {
+      "primary": "#dc2626",
+      "secondary": "#ef4444",
+      "background": "#09090b"
+    }
+  },
+  "whiteboard": {
+    "enabled": true
+  },
+  "features": {
+    "chat": true,
+    "screen_share": true,
+    "raise_hand": true,
+    "recording": true,
+    "breakout_room": true,
+    "shared_notepad": true
+  }
+}
