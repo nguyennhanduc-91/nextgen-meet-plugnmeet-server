@@ -15,8 +15,8 @@ services:
 
   # 2. LÕI XỬ LÝ LOGIC (PLUGNMEET SERVER)
   plugnmeet-server:
-    # Server dùng bản v2.1.7
-    image: mynaparrot/plugnmeet-server:v2.1.7
+    # CHỐT: Dùng bản v2.1.6 (Bản này 100% có trên Docker Hub và đã tải thành công)
+    image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
     volumes:
@@ -25,24 +25,23 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
-  # 3. GIAO DIỆN NGƯỜI DÙNG (CHẠY BẰNG NGINX SIÊU NHẸ)
+  # 3. GIAO DIỆN NGƯỜI DÙNG (NGINX TẢI TRỰC TIẾP ZIP v2.1.7 TỪ GITHUB)
   plugnmeet-client:
     image: nginx:alpine
-    # Kịch bản tự động hóa tải mã nguồn tĩnh và cấu hình Logo
     command: >
       /bin/sh -c "
       echo '1. Cai dat cong cu...' &&
       apk add --no-cache wget unzip &&
-      echo '2. Tai plugNmeet Client v2.1.7...' &&
+      echo '2. Tai plugNmeet Client v2.1.7 (Ban ZIP) tu GitHub...' &&
       wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/plugnmeet-client.zip &&
       unzip -o /tmp/client.zip -d /tmp/ext &&
       cp -rf /tmp/ext/* /usr/share/nginx/html/ &&
-      echo '3. Cau hinh API va Router...' &&
+      echo '3. Cau hinh Router va API cho Thanh Nguyen Group...' &&
       echo 'window.PLUGNMEET_SERVER_URL = \"https://api-meet.thanhnguyen.group\";' > /usr/share/nginx/html/config.js &&
       mkdir -p /usr/share/nginx/html/assets/imgs &&
       echo 'window.PLUGNMEET_SERVER_URL = \"https://api-meet.thanhnguyen.group\";' > /usr/share/nginx/html/assets/config.js &&
-      echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location / { try_files $$uri /index.html; } }' > /etc/nginx/conf.d/default.conf &&
-      echo '4. Dong bo Thuong hieu Thanh Nguyen...' &&
+      echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location / { try_files \$$uri /index.html; } }' > /etc/nginx/conf.d/default.conf &&
+      echo '4. Dong bo Thuong hieu...' &&
       wget -qO /usr/share/nginx/html/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
       wget -qO /usr/share/nginx/html/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
       wget -qO /usr/share/nginx/html/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
