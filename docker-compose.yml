@@ -2,34 +2,34 @@ version: '3.8'
 
 services:
   mariadb:
-    image: 'mariadb:10.11'
+    image: mariadb:10.11
     environment:
       MYSQL_ROOT_PASSWORD: tn_root_secure_password_2026
       MYSQL_DATABASE: plugnmeet
       MYSQL_USER: tn_plugnmeet_user
       MYSQL_PASSWORD: tn_db_password_2026
     volumes:
-      - 'mariadb-data:/var/lib/mysql'
+      - mariadb-data:/var/lib/mysql
     restart: unless-stopped
 
   plugnmeet-server:
-    image: 'mynaparrot/plugnmeet-server:v2.1.6'
+    image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
     volumes:
-      # Sử dụng tên file khác để không bao giờ bị dính lỗi Directory cũ
-      - ./thanhnguyen_config.yaml:/app/config.yaml
-    # FIX: Phải gọi đích danh ./plugnmeet-server trước tham số -config
-    command: ["./plugnmeet-server", "-config", "/app/config.yaml"]
+      # Mount file config.yaml vào ĐÚNG thư mục làm việc của hãng
+      - ./config.yaml:/app/config.yaml
+    # FIX: Gọi tên binary trực tiếp (nằm trong PATH) và trỏ vào config
+    command: ["plugnmeet-server", "-config", "/app/config.yaml"]
     environment:
-      # Bắt buộc phải có dòng này để load thư viện Microsoft AI Speech core
+      # Nạp đường dẫn thư viện AI Microsoft Speech (có sẵn trong image)
       - LD_LIBRARY_PATH=/app/lib
     expose:
-      - '8080'
+      - "8080"
     restart: unless-stopped
 
   plugnmeet-client:
-    image: 'nginx:alpine'
+    image: nginx:alpine
     command: >
       /bin/sh -c "
       apk add --no-cache wget unzip &&
@@ -46,7 +46,7 @@ services:
       nginx -g 'daemon off;'
       "
     expose:
-      - '80'
+      - "80"
     restart: unless-stopped
 
 volumes:
