@@ -15,14 +15,13 @@ services:
 
   # 2. LÕI XỬ LÝ LOGIC (PLUGNMEET SERVER)
   plugnmeet-server:
-    # CHỐT: Dùng bản v2.1.6 (Bản này 100% có trên Docker Hub và đã tải thành công)
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
     volumes:
       - ./config.yaml:/app/config.yaml
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080" # ĐÃ SỬA: Chỉ mở cổng nội bộ cho API
     restart: unless-stopped
 
   # 3. GIAO DIỆN NGƯỜI DÙNG (NGINX TẢI TRỰC TIẾP ZIP v2.1.7 TỪ GITHUB)
@@ -48,8 +47,8 @@ services:
       echo 'HOAN TAT! Dang khoi dong Nginx...' &&
       nginx -g 'daemon off;'
       "
-    ports:
-      - "80:80"
+    expose:
+      - "80" # ĐÃ SỬA: Chỉ mở cổng nội bộ cho Web
     restart: unless-stopped
 
 volumes:
