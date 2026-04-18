@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. DATABASE
   mariadb:
     image: mariadb:10.11
     environment:
@@ -12,22 +13,24 @@ services:
       - mariadb-data:/var/lib/mysql
     restart: unless-stopped
 
+  # 2. SERVER (PLUGNMEET) - ĐÃ FIX TRIỆT ĐỂ
   plugnmeet-server:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
-    volumes:
-      # TRÁNH LỖI: Mount file server_config.yaml vào một cái tên không bao giờ bị trùng
-      - ./server_config.yaml:/app/server_config.yaml
     environment:
-      # ÉP SERVER ĐỌC FILE CONFIG MỚI
-      - CONFIG_PATH=/app/server_config.yaml
-      # GIỮ NGUYÊN THƯ VIỆN AI Microsoft
+      # KHẮC PHỤC LỖI THƯ VIỆN AI: Ép nạp đường dẫn thư viện Microsoft
       - LD_LIBRARY_PATH=/app/lib
+    volumes:
+      # KHẮC PHỤC LỖI DIRECTORY: Mount cả thư mục làm việc vào /mnt/host
+      - .:/mnt/host
+    # Dùng flag -config trỏ thẳng vào file trong mount
+    command: ["./plugnmeet-server", "-config", "/mnt/host/config.yaml"]
     expose:
       - "8080"
     restart: unless-stopped
 
+  # 3. CLIENT (FRONTEND v2.1.7)
   plugnmeet-client:
     image: nginx:alpine
     command: >
