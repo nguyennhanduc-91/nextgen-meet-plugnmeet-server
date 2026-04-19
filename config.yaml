@@ -1,7 +1,7 @@
 client:
   port: 8080
   debug: false
-  path: "/app"  # <--- THAY ĐỔI DÒNG NÀY: Mặc định nó là "./client/dist"
+  path: "/app/client/dist"
   api_key: "TN_Admin_Key_2026"
   secret: "TN_Secret_Key_Super_Secure_2026"
   token_validity: 10m
