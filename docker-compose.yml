@@ -22,8 +22,8 @@ services:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
-    # GHI ĐÈ ENTRYPOINT: Tự kiểm soát toàn bộ luồng khởi động
-    entrypoint: ["/bin/sh", "-c"]
+    # GHI ĐÈ ENTRYPOINT: Tự kiểm soát luồng khởi động
+    entrypoint: ["/bin/bash", "-c"]
     command:
       - |
         echo "1. Dang tao thu muc /app va file cau hinh config.yaml..."
@@ -50,10 +50,9 @@ services:
         echo "2. Doi MariaDB khoi tao an toan (10 giay)..."
         sleep 10
         
-        echo "3. Nap thu vien AI Microsoft Speech va khoi dong Server..."
-        # FIX LỖI THƯ VIỆN: Ép trực tiếp đường dẫn bằng lệnh export
-        export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
-        exec plugnmeet-server -config /app/config.yaml
+        echo "3. Goi Entrypoint cua hang de load thu vien AI va chay Server..."
+        # FIX LỖI THƯ VIỆN AI: Trả lại quyền chạy cho script gốc của hãng
+        exec /usr/local/bin/docker-entrypoint.sh plugnmeet-server -config /app/config.yaml
     expose:
       - "8080"
     restart: unless-stopped
@@ -72,17 +71,25 @@ services:
         echo "2. Tai Client v2.1.7 tinh tu GitHub..."
         wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/client.zip
         unzip -o /tmp/client.zip -d /tmp/ext
-        cp -rf /tmp/ext/* /usr/share/nginx/html/
-        echo "3. Cau hinh API Server..."
+        
+        echo "3. Xoa trang giao dien mac dinh va dua code moi vao Nginx..."
+        # FIX LỖI GIAO DIỆN NGINX: Trỏ đúng vào thư mục client/dist và xóa trang mặc định
+        rm -rf /usr/share/nginx/html/*
+        cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/
+        
+        echo "4. Cau hinh API Server..."
         echo 'window.PLUGNMEET_SERVER_URL = "https://api-meet.thanhnguyen.group";' > /usr/share/nginx/html/config.js
         mkdir -p /usr/share/nginx/html/assets/imgs
         echo 'window.PLUGNMEET_SERVER_URL = "https://api-meet.thanhnguyen.group";' > /usr/share/nginx/html/assets/config.js
-        echo "4. Cau hinh Nginx..."
+        
+        echo "5. Cau hinh Nginx Routing..."
         echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location / { try_files $$uri /index.html; } }' > /etc/nginx/conf.d/default.conf
-        echo "5. Tai Logo thuong hieu Thanh Nguyen Group..."
+        
+        echo "6. Tai Logo thuong hieu Thanh Nguyen Group..."
         wget -qO /usr/share/nginx/html/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         wget -qO /usr/share/nginx/html/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         wget -qO /usr/share/nginx/html/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
+        
         echo "HOAN TAT! Dang bat giao dien Web..."
         exec nginx -g 'daemon off;'
     expose:
