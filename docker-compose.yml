@@ -116,10 +116,12 @@ services:
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
-          room_stream_name: "pnmRoomStream"
-          # FIX LỖI FATAL: Xóa mọi ký tự đặc biệt, chỉ dùng chữ cái
-          recorder_info_kv_name: "pnmRecorder"
-          project_info_kv_name: "pnmProject"
+          
+          # FIX CHÍ MẠNG LỖI CRASH: Tên Stream và KV phải dùng dấu gạch dưới (_)
+          room_stream_name: "room_info"
+          project_info_kv_name: "project_info"
+          recorder_info_kv_name: "recorder_info"
+          
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -181,7 +183,7 @@ services:
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/room/
         
-        # XÓA SẠCH LOGIN.HTML CŨ ĐỂ TRÁNH TRÌNH DUYỆT LƯU CACHE
+        # Xóa sạch login rác
         rm -f /usr/share/nginx/html/room/login.html
         rm -f /usr/share/nginx/html/login.html
         
@@ -271,6 +273,7 @@ services:
                     };
 
                     try {
+                        // Gọi thẳng qua Nginx Proxy, không lo lỗi CORS, không bị 502
                         const response = await fetch('/auth/room/getJoinToken', {
                             method: 'POST',
                             headers: {
@@ -309,6 +312,9 @@ services:
         </html>
         EOFHTML
 
+        # FIX LỖI 403 FORBIDDEN: Cấp quyền cho file index.html vừa tạo
+        chmod -R 755 /usr/share/nginx/html
+        
         echo "5. Cau hinh Nginx Routing..."
         cat << 'EOF' > /etc/nginx/conf.d/default.conf
         server { 
@@ -321,7 +327,7 @@ services:
             try_files $$uri $$uri/ /index.html; 
           }
           
-          # 2. XÓA BỎ HOÀN TOÀN LOGIN CŨ (ÉP REDIRECT VỀ TRANG CHỦ)
+          # 2. XÓA BỎ HOÀN TOÀN LOGIN CŨ
           location = /login.html {
             return 301 /;
           }
@@ -342,6 +348,10 @@ services:
           
           location /download/ {
             proxy_pass http://plugnmeet-server:8080/download/;
+          }
+
+          location /webhook {
+            proxy_pass http://plugnmeet-server:8080/webhook;
           }
 
           # 5. WEBSOCKET NATS
