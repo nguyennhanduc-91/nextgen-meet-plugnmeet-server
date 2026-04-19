@@ -22,14 +22,11 @@ services:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
-    environment:
-      # Nạp thư viện AI Microsoft Speech
-      - LD_LIBRARY_PATH=/app/lib
-    # GHI ĐÈ ENTRYPOINT: Bỏ qua script bị lỗi cd /app của hãng
+    # GHI ĐÈ ENTRYPOINT: Tự kiểm soát toàn bộ luồng khởi động
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "1. Đang tao file cau hinh config.yaml..."
+        echo "1. Dang tao thu muc /app va file cau hinh config.yaml..."
         mkdir -p /app
         cd /app
         cat << 'EOF' > config.yaml
@@ -49,15 +46,14 @@ services:
           auth_header_token: "TN_Admin_Key_2026"
           secret: "TN_Secret_Key_Super_Secure_2026"
         EOF
-        echo "2. Khoi dong plugnmeet-server..."
-        # Tự động dò tìm file thực thi để chạy chuẩn xác nhất
-        if command -v plugnmeet-server >/dev/null 2>&1; then
-          exec plugnmeet-server -config /app/config.yaml
-        elif [ -f /usr/local/bin/plugnmeet-server ]; then
-          exec /usr/local/bin/plugnmeet-server -config /app/config.yaml
-        else
-          exec ./plugnmeet-server -config /app/config.yaml
-        fi
+        
+        echo "2. Doi MariaDB khoi tao an toan (10 giay)..."
+        sleep 10
+        
+        echo "3. Nap thu vien AI Microsoft Speech va khoi dong Server..."
+        # FIX LỖI THƯ VIỆN: Ép trực tiếp đường dẫn bằng lệnh export
+        export LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
+        exec plugnmeet-server -config /app/config.yaml
     expose:
       - "8080"
     restart: unless-stopped
@@ -74,7 +70,6 @@ services:
         echo "1. Cai dat cong cu giai nen..."
         apk add --no-cache wget unzip
         echo "2. Tai Client v2.1.7 tinh tu GitHub..."
-        # ĐÃ FIX URL: Trỏ đúng vào file client.zip theo phát hiện của bạn
         wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/client.zip
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/* /usr/share/nginx/html/
