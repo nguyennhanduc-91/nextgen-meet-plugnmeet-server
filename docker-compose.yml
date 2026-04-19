@@ -33,23 +33,29 @@ services:
         cd /app
         cat << 'EOF' > config.yaml
         client:
-          # Chỉ điểm cho Server biết lấy CSS ở đâu
           path: "/app/client/dist"
+          port: 8080
+          debug: false
+          api_key: "TN_Admin_Key_2026"
+          secret: "TN_Secret_Key_Super_Secure_2026"
         livekit_info:
           host: "wss://livekit.thanhnguyen.group"
           api_key: "API_nextgen_admin_key"
           secret: "SEC_thanhnguyen_group_super_secure_9999"
         redis_info:
-          host: "194.233.84.253:6379"
+          host: "194.233.84.253"
+          port: "6379"
+          username: ""
           password: "fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c"
-          dbname: 0
+          db: 0
           use_tls: false
-        db_info:
+        database_info:
           driver_name: "mysql"
-          dsn: "tn_plugnmeet_user:tn_db_password_2026@tcp(mariadb:3306)/plugnmeet?parseTime=true"
-        app_info:
-          auth_header_token: "TN_Admin_Key_2026"
-          secret: "TN_Secret_Key_Super_Secure_2026"
+          host: "mariadb"
+          port: 3306
+          username: "tn_plugnmeet_user"
+          password: "tn_db_password_2026"
+          db: "plugnmeet"
         EOF
         
         echo "2. Doi MariaDB khoi tao an toan..."
