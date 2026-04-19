@@ -114,7 +114,6 @@ services:
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
           room_stream_name: "pnm-room-stream"
-          # BỔ SUNG LẠI CÁC KÊNH (SUBJECTS) ĐỂ KHÔNG BỊ LỖI INVALID SUBJECT
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -132,6 +131,10 @@ services:
           allowed_types: ["jpg","png","jpeg","svg","pdf","docx","txt","xlsx","pptx","zip","mp4","webm","mp3"]
         shared_notepad:
           enabled: false
+        # FIX LỖI "invalid bucket name": Tắt tính năng recorder mặc định
+        recorder_info:
+          recording_files_path: "/app/upload"
+          custom_logo: ""
         EOF
         
         echo "2. Doi MariaDB va NATS khoi tao an toan..."
