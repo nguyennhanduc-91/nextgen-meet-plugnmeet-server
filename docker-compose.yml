@@ -57,7 +57,8 @@ services:
         EOF
         exec nats-server -config /etc/nats/nats-server.conf
     volumes:
-      - nats-data:/data/jetstream
+      # FIX LỖI OVERLAP: Đổi tên volume để xóa sạch dữ liệu cũ bị kẹt
+      - nats-data-final:/data/jetstream
     restart: unless-stopped
 
   # ==========================================
@@ -114,13 +115,10 @@ services:
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
-          
-          room_stream_name: "pnm-room-stream"
-          
-          # FIX CHÍ TỬ: Chỉ dùng CHỮ CÁI, không dùng bất kỳ dấu gạch nào
-          project_info_kv_name: "pnmProject"
-          recorder_info_kv_name: "pnmRecorder"
-          
+          # FIX TRIỆT ĐỂ LỖI NATS: Dùng tên cực ngắn, không ký tự đặc biệt
+          room_stream_name: "pnmstream"
+          project_info_kv_name: "pnmproj"
+          recorder_info_kv_name: "pnmrec"
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -182,16 +180,16 @@ services:
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/room/
         
-        # Xóa sạch login rác
+        # Xóa login cũ
         rm -f /usr/share/nginx/html/room/login.html
         rm -f /usr/share/nginx/html/login.html
         
-        # Cấu hình biến môi trường
+        # Cấu hình API
         echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/room/config.js
         mkdir -p /usr/share/nginx/html/room/assets/imgs
         echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/room/assets/config.js
         
-        # Ghi đè logo
+        # Logo thương hiệu
         wget -qO /usr/share/nginx/html/room/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         wget -qO /usr/share/nginx/html/room/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         wget -qO /usr/share/nginx/html/room/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
@@ -223,88 +221,46 @@ services:
         </head>
         <body>
             <div class="login-box">
-                <img src="https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png" alt="Logo" class="logo" onerror="this.src='https://mynaparrot.com/images/plugnmeet/logo.png'">
+                <img src="https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png" alt="Logo" class="logo">
                 <h2>Tham Gia Phòng Họp</h2>
                 <p class="subtitle">NextGen Meet by Thanh Nguyen Group</p>
-                
                 <div class="input-group">
                     <label>Tên hiển thị của bạn</label>
-                    <input type="text" id="userName" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="off" required>
+                    <input type="text" id="userName" placeholder="Nguyễn Văn A" autocomplete="off" required>
                 </div>
                 <div class="input-group">
                     <label>Mã phòng họp</label>
-                    <input type="text" id="roomName" placeholder="Ví dụ: PhongHop-01" value="NextGen-Room" autocomplete="off" required>
+                    <input type="text" id="roomName" value="NextGen-Room" autocomplete="off" required>
                 </div>
-                
                 <button onclick="joinRoom()" id="joinBtn">Vào Phòng Ngay</button>
                 <div id="error-msg"></div>
-                
                 <div class="footer">Bảo mật & Mã hóa E2EE</div>
             </div>
-
             <script>
                 async function joinRoom() {
                     const btn = document.getElementById('joinBtn');
                     const errorMsg = document.getElementById('error-msg');
                     const userName = document.getElementById('userName').value.trim();
                     const roomName = document.getElementById('roomName').value.trim();
-
                     if(!userName || !roomName) {
-                        errorMsg.innerText = "Vui lòng nhập đầy đủ Tên và Mã phòng!";
+                        errorMsg.innerText = "Vui lòng nhập Tên và Mã phòng!";
                         errorMsg.style.display = "block";
                         return;
                     }
-
                     btn.innerText = "Đang kết nối...";
                     btn.disabled = true;
                     errorMsg.style.display = "none";
-
-                    const userId = "user_" + Math.random().toString(36).substring(2, 9);
-                    
-                    const payload = {
-                        room_id: roomName,
-                        user_info: {
-                            name: userName,
-                            user_id: userId,
-                            is_admin: true, 
-                            is_hidden: false
-                        }
-                    };
-
                     try {
                         const response = await fetch('/auth/room/getJoinToken', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'API-KEY': 'TN_Admin_Key_2026',
-                                'API-SECRET': 'TN_Secret_Key_Super_Secure_2026'
-                            },
-                            body: JSON.stringify(payload)
+                            headers: { 'Content-Type': 'application/json', 'API-KEY': 'TN_Admin_Key_2026', 'API-SECRET': 'TN_Secret_Key_Super_Secure_2026' },
+                            body: JSON.stringify({ room_id: roomName, user_info: { name: userName, user_id: "u_" + Math.random().toString(36).substring(7), is_admin: true } })
                         });
-
                         const data = await response.json();
-                        
-                        if(data.status) {
-                            window.location.href = "/room/?access_token=" + data.token;
-                        } else {
-                            errorMsg.innerText = "Lỗi: " + (data.msg || "Không thể tạo phòng");
-                            errorMsg.style.display = "block";
-                            btn.innerText = "Vào Phòng Ngay";
-                            btn.disabled = false;
-                        }
-                    } catch(e) {
-                        errorMsg.innerText = "Lỗi kết nối đến Server. Vui lòng thử lại!";
-                        errorMsg.style.display = "block";
-                        btn.innerText = "Vào Phòng Ngay";
-                        btn.disabled = false;
-                    }
+                        if(data.status) { window.location.href = "/room/?access_token=" + data.token; } 
+                        else { errorMsg.innerText = "Lỗi: " + (data.msg || "Không thể tạo phòng"); errorMsg.style.display = "block"; btn.innerText = "Vào Phòng Ngay"; btn.disabled = false; }
+                    } catch(e) { errorMsg.innerText = "Kết nối thất bại. Thử lại sau!"; errorMsg.style.display = "block"; btn.innerText = "Vào Phòng Ngay"; btn.disabled = false; }
                 }
-                
-                document.addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter') {
-                        joinRoom();
-                    }
-                });
             </script>
         </body>
         </html>
@@ -319,34 +275,17 @@ services:
           root /usr/share/nginx/html; 
           index index.html; 
           
-          location / { 
-            try_files $$uri $$uri/ /index.html; 
-          }
-          
-          location = /login.html {
-            return 301 /;
-          }
-          
-          location /room/ {
-            try_files $$uri $$uri/ /room/index.html;
-          }
+          location / { try_files $$uri $$uri/ /index.html; }
+          location = /login.html { return 301 /; }
+          location /room/ { try_files $$uri $$uri/ /room/index.html; }
           
           location /auth/ {
             proxy_pass http://plugnmeet-server:8080/auth/;
             proxy_set_header Host $$host;
             proxy_set_header X-Real-IP $$remote_addr;
             proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $$scheme;
           }
           
-          location /download/ {
-            proxy_pass http://plugnmeet-server:8080/download/;
-          }
-
-          location /webhook {
-            proxy_pass http://plugnmeet-server:8080/webhook;
-          }
-
           location /nats {
             proxy_pass http://nats:8222;
             proxy_http_version 1.1;
@@ -356,8 +295,6 @@ services:
           }
         }
         EOF
-        
-        echo "HOAN TAT! Dang bat giao dien Web..."
         exec nginx -g 'daemon off;'
     expose:
       - "80"
@@ -366,5 +303,6 @@ services:
 volumes:
   mariadb-data:
   frontend-dist:
-  nats-data:
+  # Tên Volume mới để xóa sạch dữ liệu cũ bị trùng lặp subjects
+  nats-data-final:
   plugnmeet-upload:
