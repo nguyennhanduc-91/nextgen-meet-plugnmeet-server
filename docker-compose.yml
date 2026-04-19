@@ -21,8 +21,8 @@ services:
     ports:
       - "4222:4222"
     volumes:
-      # Chúng ta sẽ inject file này từ Coolify UI
-      - /nats-server.conf:/nats-server.conf
+      # Lấy file từ Config Files của Coolify đưa vào NATS
+      - ./nats-server.conf:/nats-server.conf
       - nats-data:/data/jetstream
     restart: unless-stopped
 
@@ -36,8 +36,8 @@ services:
       - mariadb
       - nats
     volumes:
-      # Chúng ta sẽ inject file này từ Coolify UI
-      - /config.yaml:/app/config.yaml
+      # Lấy file từ Config Files của Coolify đưa vào Backend
+      - ./config.yaml:/app/config.yaml
       - plugnmeet-upload:/app/upload
     command: ["plugnmeet-server", "-config", "/app/config.yaml"]
     environment:
