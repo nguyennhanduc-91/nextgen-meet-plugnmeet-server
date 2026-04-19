@@ -21,7 +21,8 @@ services:
     ports:
       - "4222:4222"
     volumes:
-      - ./pnm-nats.conf:/pnm-nats.conf
+      # BÍ QUYẾT: Sử dụng đường dẫn tuyệt đối trên server
+      - /data/coolify/applications/rhwb9lwnu4wzz140mdo3ughg/pnm-nats.conf:/pnm-nats.conf
       - nats-data:/data/jetstream
     restart: unless-stopped
 
@@ -35,7 +36,8 @@ services:
       - mariadb
       - nats
     volumes:
-      - ./pnm-config.yaml:/app/pnm-config.yaml
+      # BÍ QUYẾT: Sử dụng đường dẫn tuyệt đối trên server
+      - /data/coolify/applications/rhwb9lwnu4wzz140mdo3ughg/pnm-config.yaml:/app/pnm-config.yaml
       - plugnmeet-upload:/app/upload
     command: ["plugnmeet-server", "-config", "/app/pnm-config.yaml"]
     environment:
