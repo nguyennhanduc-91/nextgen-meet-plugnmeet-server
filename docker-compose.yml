@@ -23,14 +23,15 @@ services:
     depends_on:
       - mariadb
     environment:
-      # KHÔNG THỂ THIẾU: Nạp thư viện AI Microsoft Speech
+      # Nạp thư viện AI Microsoft Speech
       - LD_LIBRARY_PATH=/app/lib
-    # BỎ HOÀN TOÀN 'volumes' CỦA CONFIG ĐỂ CHỐNG LỖI "IS A DIRECTORY"
+    # GHI ĐÈ ENTRYPOINT: Bỏ qua script bị lỗi cd /app của hãng
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - /bin/sh
-      - -c
       - |
         echo "1. Đang tao file cau hinh config.yaml..."
+        mkdir -p /app
+        cd /app
         cat << 'EOF' > config.yaml
         livekit_info:
           host: "wss://livekit.thanhnguyen.group"
@@ -49,8 +50,14 @@ services:
           secret: "TN_Secret_Key_Super_Secure_2026"
         EOF
         echo "2. Khoi dong plugnmeet-server..."
-        # Gọi thẳng tên phần mềm (không dùng ./) để hệ thống tự tìm trong PATH
-        exec plugnmeet-server -config config.yaml
+        # Tự động dò tìm file thực thi để chạy chuẩn xác nhất
+        if command -v plugnmeet-server >/dev/null 2>&1; then
+          exec plugnmeet-server -config /app/config.yaml
+        elif [ -f /usr/local/bin/plugnmeet-server ]; then
+          exec /usr/local/bin/plugnmeet-server -config /app/config.yaml
+        else
+          exec ./plugnmeet-server -config /app/config.yaml
+        fi
     expose:
       - "8080"
     restart: unless-stopped
@@ -67,7 +74,8 @@ services:
         echo "1. Cai dat cong cu giai nen..."
         apk add --no-cache wget unzip
         echo "2. Tai Client v2.1.7 tinh tu GitHub..."
-        wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/plugnmeet-client.zip
+        # ĐÃ FIX URL: Trỏ đúng vào file client.zip theo phát hiện của bạn
+        wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/client.zip
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/* /usr/share/nginx/html/
         echo "3. Cau hinh API Server..."
