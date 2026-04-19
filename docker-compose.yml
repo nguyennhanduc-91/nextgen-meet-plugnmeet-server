@@ -17,11 +17,12 @@ services:
     command:
       - "-DVV"
       - "-config"
-      - "/app/nats-server.conf" # Trỏ thẳng vào thư mục app mà ta sẽ mount
+      # Gọi file cấu hình đã được copy sẵn vào trong NATS container
+      - "/nats-server.conf"
     ports:
       - "4222:4222"
     volumes:
-      - ./:/app:ro # Mount TOÀN BỘ thư mục root của Github vào thư mục /app (read-only)
+      # Bỏ mount file config, chỉ mount data
       - nats-data:/data/jetstream
     restart: unless-stopped
 
@@ -30,14 +31,17 @@ services:
     restart: unless-stopped
 
   plugnmeet-server:
-    image: mynaparrot/plugnmeet-server:v2.1.6
+    # Build từ Dockerfile ở thư mục hiện tại thay vì dùng image trực tiếp
+    build:
+      context: .
+      dockerfile: Dockerfile.server
     depends_on:
       - mariadb
       - nats
     volumes:
-      - ./:/app_configs:ro # Mount TOÀN BỘ thư mục root của Github vào thư mục /app_configs
+      # Đã bỏ phần mount config.yaml
       - plugnmeet-upload:/app/upload
-    command: ["plugnmeet-server", "-config", "/app_configs/config.yaml"]
+    command: ["plugnmeet-server", "-config", "/app/config.yaml"]
     environment:
       - LD_LIBRARY_PATH=/app/lib
     expose:
