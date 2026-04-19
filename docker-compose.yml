@@ -107,14 +107,16 @@ services:
           db: "plugnmeet"
         nats_info:
           nats_urls: ["nats://nats:4222"]
-          nats_ws_urls: ["wss://api-meet.thanhnguyen.group/nats"]
+          nats_ws_urls: ["wss://meet.thanhnguyen.group/nats"]
           account: PNM
           nkey: "SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE"
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
           room_stream_name: "pnm-room-stream"
+          # FIX LỖI FATAL CHÍ MẠNG Ở ĐÂY: Cấp tên Bucket cho NATS
           recorder_info_kv_name: "recorder-info"
+          project_info_kv_name: "project-info"
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -132,7 +134,6 @@ services:
           allowed_types: ["jpg","png","jpeg","svg","pdf","docx","txt","xlsx","pptx","zip","mp4","webm","mp3"]
         shared_notepad:
           enabled: false
-        # FIX LỖI "invalid bucket name": Tắt tính năng recorder mặc định
         recorder_info:
           recording_files_path: "/app/upload"
           custom_logo: ""
@@ -158,7 +159,7 @@ services:
   plugnmeet-client:
     image: nginx:alpine
     depends_on:
-      - nats
+      - plugnmeet-server
     volumes:
       - frontend-dist:/usr/share/nginx/html
     command:
@@ -175,20 +176,36 @@ services:
         rm -rf /usr/share/nginx/html/*
         cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/
         
-        echo "4. Cau hinh API Server..."
-        echo 'window.PLUGNMEET_SERVER_URL = "https://api-meet.thanhnguyen.group";' > /usr/share/nginx/html/config.js
+        echo "4. Cau hinh URL chinh..."
+        echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/config.js
         mkdir -p /usr/share/nginx/html/assets/imgs
-        echo 'window.PLUGNMEET_SERVER_URL = "https://api-meet.thanhnguyen.group";' > /usr/share/nginx/html/assets/config.js
+        echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/assets/config.js
         
-        echo "5. Cau hinh Nginx Routing..."
+        echo "5. Cau hinh Nginx Routing Proxy..."
         cat << 'EOF' > /etc/nginx/conf.d/default.conf
         server { 
           listen 80; 
           root /usr/share/nginx/html; 
           index index.html; 
+          
+          # Fix chống lỗi 404 cho React/SPA
           location / { 
-            try_files $$uri /index.html; 
+            try_files $$uri $$uri/ /index.html; 
           }
+          
+          # Chuyển hướng API sang Backend (Fix lỗi 405 Method Not Allowed)
+          location /auth/ {
+            proxy_pass http://plugnmeet-server:8080/auth/;
+            proxy_set_header Host $$host;
+            proxy_set_header X-Real-IP $$remote_addr;
+            proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $$scheme;
+          }
+          
+          location /download/ {
+            proxy_pass http://plugnmeet-server:8080/download/;
+          }
+
           location /nats {
             proxy_pass http://nats:8222;
             proxy_http_version 1.1;
