@@ -1,31 +1,6 @@
 version: '3.8'
 
 services:
-  # 1. CONTAINER KHỞI TẠO (INIT): Tự động tải file config và frontend rồi tự tắt
-  setup-files:
-    image: alpine:latest
-    volumes:
-      - pnm-configs:/shared_configs
-      - pnm-frontend:/shared_frontend
-    command: >
-      /bin/sh -c "
-      echo 'Đang cài đặt công cụ...' &&
-      apk add --no-cache wget unzip &&
-
-      echo 'Đang tải file cấu hình từ Github...' &&
-      wget -qO /shared_configs/config.yaml https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-plugnmeet/main/config.yaml &&
-      wget -qO /shared_configs/nats-server.conf https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-plugnmeet/main/nats-server.conf &&
-
-      echo 'Đang tải Frontend PlugNmeet...' &&
-      wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/plugnmeet-client.zip &&
-      unzip -o /tmp/client.zip -d /shared_frontend &&
-      
-      echo 'Tạo thư mục CSS ảo để Backend không báo lỗi...' &&
-      mkdir -p /shared_frontend/assets/css &&
-      
-      echo 'Hoàn tất khởi tạo!'
-      "
-
   mariadb:
     image: mariadb:10.11
     environment:
@@ -39,14 +14,57 @@ services:
 
   nats:
     image: nats:2.12-alpine
-    depends_on:
-      setup-files:
-        condition: service_completed_successfully
-    command: ["-DVV", "-config", "/etc/nats/nats-server.conf"]
+    command: >
+      /bin/sh -c "
+      cat << 'EOF' > /nats.conf
+      websocket {
+          port: 8222
+          no_tls: true
+      }
+      jetstream: {
+          store_dir: /data/jetstream
+      }
+      accounts {
+          SYS: {
+              exports: [
+                  {
+                      stream: \"\$$SYS.ACCOUNT.PNM.>\",
+                      accounts: [PNM]
+                  }
+              ]
+          }
+          PNM: {
+              jetstream: enabled
+              imports: [
+                  {
+                      stream: {
+                          account: SYS, subject: \"\$$SYS.ACCOUNT.PNM.>\"
+                      }
+                  }
+              ]
+              users: [
+                  {
+                      nkey: UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP
+                  }
+              ]
+          }
+      }
+      system_account: SYS
+      authorization {
+          timeout: 5
+          auth_callout {
+              issuer: AD7EHM6WBIVERNVY6K7T3QEL62EB2BNMK4TTHXTUHTYSJGS3SZFZ4HX5
+              auth_users: [ UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP ]
+              account: PNM
+              xkey: XAVXJLXWZR7W24SAOPN6YATDOF2B6URA4GMBKYM7SBQIFO4O6OLQKSZB
+          }
+      }
+      EOF
+      nats-server -DVV -config /nats.conf
+      "
     ports:
       - "4222:4222"
     volumes:
-      - pnm-configs:/etc/nats
       - nats-data:/data/jetstream
     restart: unless-stopped
 
@@ -57,16 +75,85 @@ services:
   plugnmeet-server:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
-      setup-files:
-        condition: service_completed_successfully
-      mariadb:
-        condition: service_started
+      - mariadb
+      - nats
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /app/client/dist/assets/css &&
+      cat << 'EOF' > /app/config.yaml
+      client:
+        port: 8080
+        debug: false
+        path: \"/app/client/dist\"
+        api_key: \"TN_Admin_Key_2026\"
+        secret: \"TN_Secret_Key_Super_Secure_2026\"
+        token_validity: 10m
+        copyright_conf:
+          display: false
+          text: 'Powered by NextGen Meet'
+      room_default_settings:
+        max_duration: 0
+        max_participants: 0
+        max_num_breakout_rooms: 6
+      livekit_info:
+        host: \"wss://livekit.thanhnguyen.group\"
+        api_key: \"API_nextgen_admin_key\"
+        secret: \"SEC_thanhnguyen_group_super_secure_9999\"
+      redis_info:
+        host: \"194.233.84.253:6379\"
+        username: \"\"
+        password: \"fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c\"
+        db: 0
+      database_info:
+        driver_name: mysql
+        host: mariadb
+        port: 3306
+        username: \"tn_plugnmeet_user\"
+        password: \"tn_db_password_2026\"
+        db: \"plugnmeet\"
+        prefix: \"pnm_\"
+        charset: \"utf8mb4\"
+        loc: \"UTC\"
+        conn_max_lifetime: 4m
+        max_open_conns: 10
+      nats_info:
+        nats_urls:
+          - \"nats://nats:4222\"
+        nats_ws_urls:
+          - \"wss://api-meet.thanhnguyen.group/nats\" 
+        account: PNM
+        nkey: \"SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE\"
+        auth_callout_issuer_private: \"SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA\"
+        auth_callout_xkey_private: \"SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU\"
+        num_replicas: 1
+        room_stream_name: \"pnm-room-stream\"
+        subjects:
+          system_api_worker: \"sysApiWorker\"
+          system_js_worker: \"sysJsWorker\"
+          system_core_worker: \"sysCoreWorker\"
+          system_public: \"sysPublic\"
+          system_private: \"sysPrivate\"
+          chat: \"chat\"
+          whiteboard: \"whiteboard\"
+          data_channel: \"dataChannel\"
+      upload_file_settings:
+        path: \"/app/upload\"
+        max_size: 50
+        max_size_whiteboard_file: 30
+        keep_forever: false
+        allowed_types: [\"jpg\",\"png\",\"jpeg\",\"svg\",\"pdf\",\"docx\",\"txt\",\"xlsx\",\"pptx\",\"zip\",\"mp4\",\"webm\",\"mp3\"]
+      shared_notepad:
+        enabled: true
+        etherpad_hosts:
+          - id: \"node_01\"
+            host: \"http://etherpad:9001\"
+            client_id: \"plugNmeet\"
+            client_secret: \"lmpGEH0MxrBg7ymsbSh9TU1d6VHRMk\"
+      EOF
+      plugnmeet-server -config /app/config.yaml
+      "
     volumes:
-      # Lấy config và frontend từ container khởi tạo
-      - pnm-configs:/app/configs
-      - pnm-frontend:/app/client/dist
       - plugnmeet-upload:/app/upload
-    command: ["plugnmeet-server", "-config", "/app/configs/config.yaml"]
     environment:
       - LD_LIBRARY_PATH=/app/lib
     expose:
@@ -76,23 +163,17 @@ services:
   plugnmeet-client:
     image: nginx:alpine
     depends_on:
-      setup-files:
-        condition: service_completed_successfully
-    volumes:
-      # Lấy frontend từ container khởi tạo
-      - pnm-frontend:/usr/share/nginx/html
+      - plugnmeet-server
+      - nats
     command: >
       /bin/sh -c "
-      echo 'Cập nhật URL API cho Frontend...' &&
+      apk add --no-cache wget unzip &&
+      wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/plugnmeet-client.zip &&
+      unzip -o /tmp/client.zip -d /tmp/ext &&
+      cp -rf /tmp/ext/* /usr/share/nginx/html/ &&
       echo 'window.PLUGNMEET_SERVER_URL = \"https://api-meet.thanhnguyen.group\";' > /usr/share/nginx/html/config.js &&
+      mkdir -p /usr/share/nginx/html/assets/imgs &&
       echo 'window.PLUGNMEET_SERVER_URL = \"https://api-meet.thanhnguyen.group\";' > /usr/share/nginx/html/assets/config.js &&
-      
-      echo 'Tải Logo tùy chỉnh...' &&
-      wget -qO /usr/share/nginx/html/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-      wget -qO /usr/share/nginx/html/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-      wget -qO /usr/share/nginx/html/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-
-      echo 'Cấu hình Nginx...' &&
       echo 'server { 
         listen 80; 
         root /usr/share/nginx/html; 
@@ -108,8 +189,9 @@ services:
           proxy_set_header Host \$$host;
         }
       }' > /etc/nginx/conf.d/default.conf &&
-      
-      echo 'Khởi động Nginx...' &&
+      wget -qO /usr/share/nginx/html/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
+      wget -qO /usr/share/nginx/html/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
+      wget -qO /usr/share/nginx/html/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
       nginx -g 'daemon off;'
       "
     expose:
@@ -120,5 +202,3 @@ volumes:
   mariadb-data:
   nats-data:
   plugnmeet-upload:
-  pnm-configs:
-  pnm-frontend:
