@@ -23,7 +23,7 @@ services:
     depends_on:
       - mariadb
     volumes:
-      # BẮC CẦU: Nhận file từ Nginx truyền sang
+      # BẮC CẦU: Nhận file CSS/JS từ Nginx truyền sang
       - frontend-dist:/app/client/dist
     entrypoint: ["/bin/bash", "-c"]
     command:
@@ -43,11 +43,11 @@ services:
           api_key: "API_nextgen_admin_key"
           secret: "SEC_thanhnguyen_group_super_secure_9999"
         redis_info:
-          host: "194.233.84.253"
-          port: "6379"
+          # FIX LỖI "missing port in address": Gộp IP và Cổng vào chung trường host
+          host: "194.233.84.253:6379"
           username: ""
           password: "fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c"
-          db: 0
+          dbname: 0
           use_tls: false
         database_info:
           driver_name: "mysql"
@@ -62,7 +62,7 @@ services:
         sleep 10
         
         echo "3. Dang cho Nginx tai va giai nen xong CSS..."
-        # Vòng lặp chờ an toàn: Nếu Frontend chưa có CSS thì Server đứng đợi (không bị crash)
+        # Vòng lặp chờ an toàn: Nếu Frontend chưa có CSS thì Server đứng đợi
         while [ ! -d "/app/client/dist/assets/css" ]; do
           sleep 2
         done
