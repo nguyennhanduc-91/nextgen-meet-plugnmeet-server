@@ -68,8 +68,7 @@ services:
     depends_on:
       - mariadb
       - nats
-    extra_hosts:
-      - "livekit.thanhnguyen.group:host-gateway"
+    # Đã XÓA EXTRA_HOSTS để Server kết nối LiveKit trơn tru qua đường mạng chuẩn
     volumes:
       - frontend-dist:/app/client/dist
       - plugnmeet-upload:/app/upload
@@ -116,12 +115,9 @@ services:
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
-          
-          # FIX CHÍ MẠNG LỖI CRASH: Tên Stream và KV phải dùng dấu gạch dưới (_)
           room_stream_name: "room_info"
           project_info_kv_name: "project_info"
           recorder_info_kv_name: "recorder_info"
-          
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -273,7 +269,6 @@ services:
                     };
 
                     try {
-                        // Gọi thẳng qua Nginx Proxy, không lo lỗi CORS, không bị 502
                         const response = await fetch('/auth/room/getJoinToken', {
                             method: 'POST',
                             headers: {
@@ -312,7 +307,6 @@ services:
         </html>
         EOFHTML
 
-        # FIX LỖI 403 FORBIDDEN: Cấp quyền cho file index.html vừa tạo
         chmod -R 755 /usr/share/nginx/html
         
         echo "5. Cau hinh Nginx Routing..."
@@ -322,22 +316,18 @@ services:
           root /usr/share/nginx/html; 
           index index.html; 
           
-          # 1. TRANG CHỦ TỐI GIẢN
           location / { 
             try_files $$uri $$uri/ /index.html; 
           }
           
-          # 2. XÓA BỎ HOÀN TOÀN LOGIN CŨ
           location = /login.html {
             return 301 /;
           }
           
-          # 3. PHÒNG HỌP GỐC
           location /room/ {
             try_files $$uri $$uri/ /room/index.html;
           }
           
-          # 4. API BACKEND
           location /auth/ {
             proxy_pass http://plugnmeet-server:8080/auth/;
             proxy_set_header Host $$host;
@@ -354,7 +344,6 @@ services:
             proxy_pass http://plugnmeet-server:8080/webhook;
           }
 
-          # 5. WEBSOCKET NATS
           location /nats {
             proxy_pass http://nats:8222;
             proxy_http_version 1.1;
