@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. DATABASE LƯU TRỮ
   mariadb:
     image: mariadb:10.11
     environment:
@@ -12,22 +13,24 @@ services:
       - mariadb-data:/var/lib/mysql
     restart: unless-stopped
 
+  # 2. LÕI XỬ LÝ LOGIC (PLUGNMEET SERVER)
   plugnmeet-server:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
     volumes:
-      # Mount file config.yaml vào ĐÚNG thư mục làm việc của hãng
+      # SỬ DỤNG TÊN FILE KHÁC Ở NGOÀI ĐỂ TRÁNH LỖI CACHE DIRECTORY
       - ./config.yaml:/app/config.yaml
-    # FIX: Gọi tên binary trực tiếp (nằm trong PATH) và trỏ vào config
-    command: ["plugnmeet-server", "-config", "/app/config.yaml"]
     environment:
-      # Nạp đường dẫn thư viện AI Microsoft Speech (có sẵn trong image)
+      # BẮT BUỘC: Khai báo để nạp thư viện AI Microsoft Speech
       - LD_LIBRARY_PATH=/app/lib
+    # CHUẨN HÃNG: Gọi binary và trỏ file config
+    command: ["plugnmeet-server", "-config", "/app/config.yaml"]
     expose:
       - "8080"
     restart: unless-stopped
 
+  # 3. GIAO DIỆN NGƯỜI DÙNG (NGINX CLIENT v2.1.7)
   plugnmeet-client:
     image: nginx:alpine
     command: >
