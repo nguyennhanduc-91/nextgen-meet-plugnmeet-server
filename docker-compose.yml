@@ -20,7 +20,6 @@ services:
   # ==========================================
   nats:
     image: nats:2.12-alpine
-    # FIX LỖI YAML: Dùng ký tự | để giữ nguyên cấu trúc xuống dòng
     command:
       - /bin/sh
       - -c
@@ -71,6 +70,7 @@ services:
       - nats
     volumes:
       - frontend-dist:/app/client/dist
+      - plugnmeet-upload:/app/upload
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -84,6 +84,10 @@ services:
           debug: false
           api_key: "TN_Admin_Key_2026"
           secret: "TN_Secret_Key_Super_Secure_2026"
+        room_default_settings:
+          max_duration: 0
+          max_participants: 0
+          max_num_breakout_rooms: 6
         livekit_info:
           host: "wss://livekit.thanhnguyen.group"
           api_key: "API_nextgen_admin_key"
@@ -108,6 +112,26 @@ services:
           nkey: "SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE"
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
+          num_replicas: 1
+          room_stream_name: "pnm-room-stream"
+          # BỔ SUNG LẠI CÁC KÊNH (SUBJECTS) ĐỂ KHÔNG BỊ LỖI INVALID SUBJECT
+          subjects:
+            system_api_worker: "sysApiWorker"
+            system_js_worker: "sysJsWorker"
+            system_core_worker: "sysCoreWorker"
+            system_public: "sysPublic"
+            system_private: "sysPrivate"
+            chat: "chat"
+            whiteboard: "whiteboard"
+            data_channel: "dataChannel"
+        upload_file_settings:
+          path: "/app/upload"
+          max_size: 50
+          max_size_whiteboard_file: 30
+          keep_forever: false
+          allowed_types: ["jpg","png","jpeg","svg","pdf","docx","txt","xlsx","pptx","zip","mp4","webm","mp3"]
+        shared_notepad:
+          enabled: false
         EOF
         
         echo "2. Doi MariaDB va NATS khoi tao an toan..."
@@ -187,3 +211,4 @@ volumes:
   mariadb-data:
   frontend-dist:
   nats-data:
+  plugnmeet-upload:
