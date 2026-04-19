@@ -1,10 +1,76 @@
 client:
   port: 8080
   debug: false
-  path: "/app/client/dist"
+  # Quan trọng: Đường dẫn này phải trỏ đến thư mục tĩnh bên trong container
+  path: "/usr/share/nginx/html" 
   api_key: "TN_Admin_Key_2026"
   secret: "TN_Secret_Key_Super_Secure_2026"
   token_validity: 10m
   copyright_conf:
     display: false
     text: 'Powered by NextGen Meet'
+
+room_default_settings:
+  max_duration: 0
+  max_participants: 0
+  max_num_breakout_rooms: 6
+
+livekit_info:
+  host: "wss://livekit.thanhnguyen.group"
+  api_key: "API_nextgen_admin_key"
+  secret: "SEC_thanhnguyen_group_super_secure_9999"
+
+redis_info:
+  host: "194.233.84.253:6379"
+  username: ""
+  password: "fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c"
+  db: 0
+
+database_info:
+  driver_name: mysql
+  host: mariadb
+  port: 3306
+  username: "tn_plugnmeet_user"
+  password: "tn_db_password_2026"
+  db: "plugnmeet"
+  prefix: "pnm_"
+  charset: "utf8mb4"
+  loc: "UTC"
+  conn_max_lifetime: 4m
+  max_open_conns: 10
+
+nats_info:
+  nats_urls:
+    - "nats://nats:4222"
+  nats_ws_urls:
+    - "wss://api-meet.thanhnguyen.group/nats" 
+  account: PNM
+  nkey: "SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE"
+  auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
+  auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
+  num_replicas: 1
+  room_stream_name: "pnm-room-stream"
+  subjects:
+    system_api_worker: "sysApiWorker"
+    system_js_worker: "sysJsWorker"
+    system_core_worker: "sysCoreWorker"
+    system_public: "sysPublic"
+    system_private: "sysPrivate"
+    chat: "chat"
+    whiteboard: "whiteboard"
+    data_channel: "dataChannel"
+
+upload_file_settings:
+  path: "./upload"
+  max_size: 50
+  max_size_whiteboard_file: 30
+  keep_forever: false
+  allowed_types: ["jpg","png","jpeg","svg","pdf","docx","txt","xlsx","pptx","zip","mp4","webm","mp3"]
+
+shared_notepad:
+  enabled: true
+  etherpad_hosts:
+    - id: "node_01"
+      host: "http://etherpad:9001"
+      client_id: "plugNmeet"
+      client_secret: "lmpGEH0MxrBg7ymsbSh9TU1d6VHRMk"
