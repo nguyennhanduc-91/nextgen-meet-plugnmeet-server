@@ -114,6 +114,7 @@ services:
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
           room_stream_name: "pnm-room-stream"
+          recorder_info_kv_name: "recorder-info"
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
