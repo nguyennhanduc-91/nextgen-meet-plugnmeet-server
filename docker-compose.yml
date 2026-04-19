@@ -16,14 +16,61 @@ services:
     restart: unless-stopped
 
   # ==========================================
-  # 2. LÕI XỬ LÝ (PLUGNMEET SERVER v2.1.6)
+  # 2. HỆ THỐNG TRUYỀN TIN (NATS)
+  # ==========================================
+  nats:
+    image: nats:2.12-alpine
+    # Tự động tạo cấu hình bảo mật cơ bản cho NATS trong RAM
+    command: >
+      /bin/sh -c "
+      mkdir -p /etc/nats &&
+      cat << 'EOF' > /etc/nats/nats-server.conf
+      port: 4222
+      websocket {
+          port: 8222
+          no_tls: true
+      }
+      jetstream: {
+          store_dir: /data/jetstream
+      }
+      accounts {
+          SYS: {
+              exports: [ { stream: \"\$$SYS.ACCOUNT.PNM.>\", accounts: [PNM] } ]
+          }
+          PNM: {
+              jetstream: enabled
+              imports: [ { stream: { account: SYS, subject: \"\$$SYS.ACCOUNT.PNM.>\" } } ]
+              users: [ { nkey: UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP } ]
+          }
+      }
+      system_account: SYS
+      authorization {
+          timeout: 5
+          auth_callout {
+              issuer: AD7EHM6WBIVERNVY6K7T3QEL62EB2BNMK4TTHXTUHTYSJGS3SZFZ4HX5
+              auth_users: [ UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP ]
+              account: PNM
+              xkey: XAVXJLXWZR7W24SAOPN6YATDOF2B6URA4GMBKYM7SBQIFO4O6OLQKSZB
+          }
+      }
+      EOF
+      exec nats-server -config /etc/nats/nats-server.conf
+      "
+    ports:
+      - "4222:4222"
+    volumes:
+      - nats-data:/data/jetstream
+    restart: unless-stopped
+
+  # ==========================================
+  # 3. LÕI XỬ LÝ (PLUGNMEET SERVER v2.1.6)
   # ==========================================
   plugnmeet-server:
     image: mynaparrot/plugnmeet-server:v2.1.6
     depends_on:
       - mariadb
+      - nats
     volumes:
-      # BẮC CẦU: Nhận file CSS/JS từ Nginx truyền sang
       - frontend-dist:/app/client/dist
     entrypoint: ["/bin/bash", "-c"]
     command:
@@ -43,7 +90,6 @@ services:
           api_key: "API_nextgen_admin_key"
           secret: "SEC_thanhnguyen_group_super_secure_9999"
         redis_info:
-          # FIX LỖI "missing port in address": Gộp IP và Cổng vào chung trường host
           host: "194.233.84.253:6379"
           username: ""
           password: "fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c"
@@ -56,13 +102,20 @@ services:
           username: "tn_plugnmeet_user"
           password: "tn_db_password_2026"
           db: "plugnmeet"
+        nats_info:
+          # Thêm kết nối tới NATS Server
+          nats_urls: ["nats://nats:4222"]
+          nats_ws_urls: ["wss://api-meet.thanhnguyen.group/nats"]
+          account: PNM
+          nkey: "SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE"
+          auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
+          auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
         EOF
         
-        echo "2. Doi MariaDB khoi tao an toan..."
+        echo "2. Doi MariaDB va NATS khoi tao an toan..."
         sleep 10
         
         echo "3. Dang cho Nginx tai va giai nen xong CSS..."
-        # Vòng lặp chờ an toàn: Nếu Frontend chưa có CSS thì Server đứng đợi
         while [ ! -d "/app/client/dist/assets/css" ]; do
           sleep 2
         done
@@ -74,12 +127,13 @@ services:
     restart: unless-stopped
 
   # ==========================================
-  # 3. GIAO DIỆN (NGINX CLIENT v2.1.7)
+  # 4. GIAO DIỆN (NGINX CLIENT v2.1.7)
   # ==========================================
   plugnmeet-client:
     image: nginx:alpine
+    depends_on:
+      - nats
     volumes:
-      # BẮC CẦU: Đưa file giải nén vào vùng dùng chung
       - frontend-dist:/usr/share/nginx/html
     command:
       - /bin/sh
@@ -101,7 +155,24 @@ services:
         echo 'window.PLUGNMEET_SERVER_URL = "https://api-meet.thanhnguyen.group";' > /usr/share/nginx/html/assets/config.js
         
         echo "5. Cau hinh Nginx Routing..."
-        echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location / { try_files $$uri /index.html; } }' > /etc/nginx/conf.d/default.conf
+        cat << 'EOF' > /etc/nginx/conf.d/default.conf
+        server { 
+          listen 80; 
+          root /usr/share/nginx/html; 
+          index index.html; 
+          location / { 
+            try_files $uri /index.html; 
+          }
+          # Chuyển tiếp kết nối NATS WebSocket từ Client
+          location /nats {
+            proxy_pass http://nats:8222;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "Upgrade";
+            proxy_set_header Host $host;
+          }
+        }
+        EOF
         
         echo "6. Tai Logo thuong hieu Thanh Nguyen Group..."
         wget -qO /usr/share/nginx/html/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
@@ -118,3 +189,4 @@ services:
 volumes:
   mariadb-data:
   frontend-dist:
+  nats-data:
