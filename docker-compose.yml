@@ -20,42 +20,43 @@ services:
   # ==========================================
   nats:
     image: nats:2.12-alpine
-    # Tự động tạo cấu hình bảo mật cơ bản cho NATS trong RAM
-    command: >
-      /bin/sh -c "
-      mkdir -p /etc/nats &&
-      cat << 'EOF' > /etc/nats/nats-server.conf
-      port: 4222
-      websocket {
-          port: 8222
-          no_tls: true
-      }
-      jetstream: {
-          store_dir: /data/jetstream
-      }
-      accounts {
-          SYS: {
-              exports: [ { stream: \"\$$SYS.ACCOUNT.PNM.>\", accounts: [PNM] } ]
-          }
-          PNM: {
-              jetstream: enabled
-              imports: [ { stream: { account: SYS, subject: \"\$$SYS.ACCOUNT.PNM.>\" } } ]
-              users: [ { nkey: UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP } ]
-          }
-      }
-      system_account: SYS
-      authorization {
-          timeout: 5
-          auth_callout {
-              issuer: AD7EHM6WBIVERNVY6K7T3QEL62EB2BNMK4TTHXTUHTYSJGS3SZFZ4HX5
-              auth_users: [ UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP ]
-              account: PNM
-              xkey: XAVXJLXWZR7W24SAOPN6YATDOF2B6URA4GMBKYM7SBQIFO4O6OLQKSZB
-          }
-      }
-      EOF
-      exec nats-server -config /etc/nats/nats-server.conf
-      "
+    # FIX LỖI YAML: Dùng ký tự | để giữ nguyên cấu trúc xuống dòng
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/nats
+        cat << 'EOF' > /etc/nats/nats-server.conf
+        port: 4222
+        websocket {
+            port: 8222
+            no_tls: true
+        }
+        jetstream: {
+            store_dir: /data/jetstream
+        }
+        accounts {
+            SYS: {
+                exports: [ { stream: "$$SYS.ACCOUNT.PNM.>", accounts: [PNM] } ]
+            }
+            PNM: {
+                jetstream: enabled
+                imports: [ { stream: { account: SYS, subject: "$$SYS.ACCOUNT.PNM.>" } } ]
+                users: [ { nkey: UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP } ]
+            }
+        }
+        system_account: SYS
+        authorization {
+            timeout: 5
+            auth_callout {
+                issuer: AD7EHM6WBIVERNVY6K7T3QEL62EB2BNMK4TTHXTUHTYSJGS3SZFZ4HX5
+                auth_users: [ UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP ]
+                account: PNM
+                xkey: XAVXJLXWZR7W24SAOPN6YATDOF2B6URA4GMBKYM7SBQIFO4O6OLQKSZB
+            }
+        }
+        EOF
+        exec nats-server -config /etc/nats/nats-server.conf
     volumes:
       - nats-data:/data/jetstream
     restart: unless-stopped
@@ -101,7 +102,6 @@ services:
           password: "tn_db_password_2026"
           db: "plugnmeet"
         nats_info:
-          # Thêm kết nối tới NATS Server
           nats_urls: ["nats://nats:4222"]
           nats_ws_urls: ["wss://api-meet.thanhnguyen.group/nats"]
           account: PNM
@@ -159,15 +159,14 @@ services:
           root /usr/share/nginx/html; 
           index index.html; 
           location / { 
-            try_files $uri /index.html; 
+            try_files $$uri /index.html; 
           }
-          # Chuyển tiếp kết nối NATS WebSocket từ Client
           location /nats {
             proxy_pass http://nats:8222;
             proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Upgrade $$http_upgrade;
             proxy_set_header Connection "Upgrade";
-            proxy_set_header Host $host;
+            proxy_set_header Host $$host;
           }
         }
         EOF
