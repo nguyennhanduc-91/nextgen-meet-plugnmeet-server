@@ -69,7 +69,6 @@ services:
       - mariadb
       - nats
     volumes:
-      # Lõi Server vẫn cần đọc file tĩnh của phòng họp gốc
       - frontend-dist:/app/client/dist
       - plugnmeet-upload:/app/upload
     entrypoint: ["/bin/bash", "-c"]
@@ -80,7 +79,6 @@ services:
         cd /app
         cat << 'EOF' > config.yaml
         client:
-          # Chỉ đường dẫn cho Backend tìm thấy CSS của phòng họp
           path: "/app/client/dist"
           port: 8080
           debug: false
@@ -143,7 +141,7 @@ services:
         echo "2. Doi MariaDB va NATS khoi tao an toan..."
         sleep 10
         
-        echo "3. Dang cho Nginx tai va giai nen xong CSS cua phong hop..."
+        echo "3. Dang cho Nginx tai va giai nen xong CSS..."
         while [ ! -d "/app/client/dist/assets/css" ]; do
           sleep 2
         done
@@ -155,21 +153,20 @@ services:
     restart: unless-stopped
 
   # ==========================================
-  # 4. GIAO DIỆN (NGINX CLIENT v2.1.7 + CUSTOM FRONTEND)
+  # 4. GIAO DIỆN (NGINX CLIENT v2.1.7 + UI TỐI GIẢN)
   # ==========================================
   plugnmeet-client:
     image: nginx:alpine
     depends_on:
       - plugnmeet-server
     volumes:
-      # Chia sẻ file phòng họp gốc cho Backend
       - frontend-dist:/usr/share/nginx/html/room
     command:
       - /bin/sh
       - -c
       - |
-        echo "1. Cai dat cong cu..."
-        apk add --no-cache wget unzip git
+        echo "1. Cai dat cong cu giai nen..."
+        apk add --no-cache wget unzip
         
         echo "2. Don dep Nginx..."
         rm -rf /usr/share/nginx/html/*
@@ -180,7 +177,7 @@ services:
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/room/
         
-        # Cấu hình biến cho phòng họp gốc
+        # Cấu hình biến môi trường
         echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/room/config.js
         mkdir -p /usr/share/nginx/html/room/assets/imgs
         echo 'window.PLUGNMEET_SERVER_URL="https://meet.thanhnguyen.group";' > /usr/share/nginx/html/room/assets/config.js
@@ -190,34 +187,141 @@ services:
         wget -qO /usr/share/nginx/html/room/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         wget -qO /usr/share/nginx/html/room/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true
         
-        echo "4. Tai GIAO DIEN TRANG CHU TUY CHINH (Tu repo nextgen-meet-frontend)..."
-        # Clone repo frontend của bạn vào /tmp/my-frontend
-        git clone https://github.com/nguyennhanduc-91/nextgen-meet-frontend.git /tmp/my-frontend
-        
-        # Copy TOÀN BỘ file từ frontend của bạn ra thư mục gốc của Nginx (/)
-        # (Lưu ý: Không copy đè lên thư mục /room)
-        cp -rf /tmp/my-frontend/* /usr/share/nginx/html/
-        
+        echo "4. Tao GIAO DIEN TRANG CHU TUI GIAN (Goi API tu dong)..."
+        cat << 'EOFHTML' > /usr/share/nginx/html/index.html
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>NextGen Meet - Thanh Nguyen Group</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .login-box { background-color: #111827; padding: 40px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); width: 90%; max-width: 400px; text-align: center; border: 1px solid #1f2937; }
+                .logo { max-width: 180px; margin-bottom: 24px; border-radius: 8px; }
+                h2 { margin: 0 0 8px; font-weight: 600; color: #f9fafb; font-size: 24px; }
+                p.subtitle { color: #9ca3af; margin-bottom: 32px; font-size: 14px; }
+                .input-group { margin-bottom: 20px; text-align: left; }
+                label { display: block; margin-bottom: 8px; font-size: 14px; color: #d1d5db; font-weight: 500; }
+                input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #374151; background-color: #1f2937; color: white; outline: none; box-sizing: border-box; font-size: 15px; transition: border-color 0.2s; }
+                input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+                button { width: 100%; padding: 14px; border: none; border-radius: 8px; background-color: #2563eb; color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); margin-top: 10px; }
+                button:hover { background-color: #1d4ed8; }
+                button:disabled { background-color: #4b5563; cursor: not-allowed; }
+                #error-msg { color: #ef4444; margin-top: 16px; font-size: 14px; display: none; background: #7f1d1d20; padding: 10px; border-radius: 6px; border: 1px solid #ef444450; }
+                .footer { margin-top: 24px; font-size: 12px; color: #6b7280; }
+            </style>
+        </head>
+        <body>
+            <div class="login-box">
+                <img src="https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png" alt="Logo" class="logo" onerror="this.src='https://mynaparrot.com/images/plugnmeet/logo.png'">
+                <h2>Tham Gia Phòng Họp</h2>
+                <p class="subtitle">NextGen Meet by Thanh Nguyen Group</p>
+                
+                <div class="input-group">
+                    <label>Tên hiển thị của bạn</label>
+                    <input type="text" id="userName" placeholder="Ví dụ: Nguyễn Văn A" autocomplete="off" required>
+                </div>
+                <div class="input-group">
+                    <label>Mã phòng họp</label>
+                    <input type="text" id="roomName" placeholder="Ví dụ: PhongHop-01" value="NextGen-Room" autocomplete="off" required>
+                </div>
+                
+                <button onclick="joinRoom()" id="joinBtn">Vào Phòng Ngay</button>
+                <div id="error-msg"></div>
+                
+                <div class="footer">Bảo mật & Mã hóa E2EE</div>
+            </div>
+
+            <script>
+                async function joinRoom() {
+                    const btn = document.getElementById('joinBtn');
+                    const errorMsg = document.getElementById('error-msg');
+                    const userName = document.getElementById('userName').value.trim();
+                    const roomName = document.getElementById('roomName').value.trim();
+
+                    if(!userName || !roomName) {
+                        errorMsg.innerText = "Vui lòng nhập đầy đủ Tên và Mã phòng!";
+                        errorMsg.style.display = "block";
+                        return;
+                    }
+
+                    btn.innerText = "Đang kết nối...";
+                    btn.disabled = true;
+                    errorMsg.style.display = "none";
+
+                    // Tự động tạo user_id duy nhất
+                    const userId = "user_" + Math.random().toString(36).substring(2, 9);
+                    
+                    const payload = {
+                        room_id: roomName,
+                        user_info: {
+                            name: userName,
+                            user_id: userId,
+                            is_admin: true, 
+                            is_hidden: false
+                        }
+                    };
+
+                    try {
+                        const response = await fetch('/auth/room/getJoinToken', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'API-KEY': 'TN_Admin_Key_2026',
+                                'API-SECRET': 'TN_Secret_Key_Super_Secure_2026'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await response.json();
+                        
+                        if(data.status) {
+                            // Nhận token thành công -> Vào phòng
+                            window.location.href = "/room/?access_token=" + data.token;
+                        } else {
+                            errorMsg.innerText = "Lỗi: " + (data.msg || "Không thể tạo phòng");
+                            errorMsg.style.display = "block";
+                            btn.innerText = "Vào Phòng Ngay";
+                            btn.disabled = false;
+                        }
+                    } catch(e) {
+                        errorMsg.innerText = "Lỗi kết nối đến Server. Vui lòng thử lại!";
+                        errorMsg.style.display = "block";
+                        btn.innerText = "Vào Phòng Ngay";
+                        btn.disabled = false;
+                    }
+                }
+                
+                // Cho phép nhấn phím Enter để vào phòng
+                document.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        joinRoom();
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        EOFHTML
+
         echo "5. Cau hinh Nginx Routing..."
         cat << 'EOF' > /etc/nginx/conf.d/default.conf
         server { 
           listen 80; 
           root /usr/share/nginx/html; 
+          index index.html; 
           
-          # 1. TRANG CHỦ (Giao diện tùy chỉnh của bạn)
+          # 1. TRANG CHỦ (Giao diện tùy chỉnh siêu đẹp của chúng ta)
           location / { 
-            index index.html;
             try_files $$uri $$uri/ /index.html; 
           }
           
-          # 2. PHÒNG HỌP GỐC (Chạy khi có mã Token)
+          # 2. PHÒNG HỌP GỐC (Chuyển vào thư mục /room/)
           location /room/ {
-            alias /usr/share/nginx/html/room/;
-            index index.html;
             try_files $$uri $$uri/ /room/index.html;
           }
           
-          # 3. API BACKEND
+          # 3. API BACKEND (Đã fix lỗi CORS và 405)
           location /auth/ {
             proxy_pass http://plugnmeet-server:8080/auth/;
             proxy_set_header Host $$host;
