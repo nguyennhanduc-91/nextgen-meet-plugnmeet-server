@@ -68,6 +68,9 @@ services:
     depends_on:
       - mariadb
       - nats
+    # FIX LỖI 504 TIMEOUT: Ép Server đi đường nội bộ để gọi LiveKit (Chống lỗi Hairpin NAT)
+    extra_hosts:
+      - "livekit.thanhnguyen.group:host-gateway"
     volumes:
       - frontend-dist:/app/client/dist
       - plugnmeet-upload:/app/upload
@@ -78,12 +81,14 @@ services:
         mkdir -p /app
         cd /app
         cat << 'EOF' > config.yaml
+        # FIX LỖI BẢO MẬT: Bổ sung lại khối app_info (chìa khóa tổng) bị thiếu
+        app_info:
+          auth_header_token: "TN_Admin_Key_2026"
+          secret: "TN_Secret_Key_Super_Secure_2026"
         client:
           path: "/app/client/dist"
           port: 8080
           debug: false
-          api_key: "TN_Admin_Key_2026"
-          secret: "TN_Secret_Key_Super_Secure_2026"
         room_default_settings:
           max_duration: 0
           max_participants: 0
@@ -323,7 +328,7 @@ services:
           
           # 3. API BACKEND (Đã fix lỗi CORS và 405)
           location /auth/ {
-            proxy_pass http://plugnmeet-server:8080/auth/;
+            proxy_pass http://plugnmeet-server:8080;
             proxy_set_header Host $$host;
             proxy_set_header X-Real-IP $$remote_addr;
             proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
@@ -331,7 +336,7 @@ services:
           }
           
           location /download/ {
-            proxy_pass http://plugnmeet-server:8080/download/;
+            proxy_pass http://plugnmeet-server:8080;
           }
 
           # 4. WEBSOCKET NATS
