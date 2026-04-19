@@ -68,7 +68,8 @@ services:
     depends_on:
       - mariadb
       - nats
-    # Đã XÓA EXTRA_HOSTS để Server kết nối LiveKit trơn tru qua đường mạng chuẩn
+    extra_hosts:
+      - "livekit.thanhnguyen.group:host-gateway"
     volumes:
       - frontend-dist:/app/client/dist
       - plugnmeet-upload:/app/upload
@@ -115,9 +116,14 @@ services:
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
-          room_stream_name: "room_info"
+          
+          # FIX LỖI OVERLAP: Trả lại tên cũ cho Stream vì nó đã lưu trong ổ cứng
+          room_stream_name: "pnm-room-stream"
+          
+          # Hai xô (Bucket) này vẫn dùng dấu gạch dưới để không bị lỗi Invalid Bucket
           project_info_kv_name: "project_info"
           recorder_info_kv_name: "recorder_info"
+          
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
