@@ -57,8 +57,8 @@ services:
         EOF
         exec nats-server -config /etc/nats/nats-server.conf
     volumes:
-      # ÉP LÀM MỚI DỮ LIỆU ĐỂ HẾT LỖI OVERLAP
-      - nats_data_final_v4:/data/jetstream
+      # ÉP LÀM MỚI DỮ LIỆU LẦN CUỐI
+      - nats_data_final_v5:/data/jetstream
     restart: unless-stopped
 
   # ==========================================
@@ -115,12 +115,10 @@ services:
           auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
           auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
           num_replicas: 1
-          # DÙNG TÊN MỚI HOÀN TOÀN
+          # FIX CẤU TRÚC PHẲNG CHO v2.1.6
           room_stream_name: "pnmrooms"
-          project_info:
-            kv_name: "pnmprojects"
-          recorder_info:
-            kv_name: "pnmrecorders"
+          project_info_kv_name: "pnmproj"
+          recorder_info_kv_name: "pnmrec"
           subjects:
             system_api_worker: "sysApiWorker"
             system_js_worker: "sysJsWorker"
@@ -138,13 +136,13 @@ services:
           allowed_types: ["jpg","png","jpeg","svg","pdf","docx","txt","xlsx","pptx","zip","mp4","webm","mp3"]
         shared_notepad:
           enabled: false
+        recorder_info:
+          recording_files_path: "/app/upload"
         EOF
         
         echo "2. Doi MariaDB va NATS khoi tao an toan..."
         sleep 10
-        echo "3. Kiem tra file cau hinh thuc te..."
-        cat config.yaml | grep "kv_name"
-        echo "4. Nap AI va khoi dong Server..."
+        echo "3. Khoi dong Server..."
         exec /usr/local/bin/docker-entrypoint.sh plugnmeet-server -config /app/config.yaml
     expose:
       - "8080"
@@ -171,7 +169,6 @@ services:
         unzip -o /tmp/client.zip -d /tmp/ext
         cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/room/
         rm -f /usr/share/nginx/html/room/login.html
-        rm -f /usr/share/nginx/html/login.html
         
         echo "2. Tao GIAO DIEN TRANG CHU MOI..."
         cat << 'EOFHTML' > /usr/share/nginx/html/index.html
@@ -186,7 +183,7 @@ services:
                 .login-box { background-color: #111827; padding: 40px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); width: 90%; max-width: 400px; text-align: center; border: 1px solid #1f2937; }
                 .logo { max-width: 180px; margin-bottom: 24px; }
                 .input-group { margin-bottom: 20px; text-align: left; }
-                input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #374151; background-color: #1f2937; color: white; box-sizing: border-box; }
+                input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #374151; background-color: #1f2937; color: white; box-sizing: border-box; width: 100%; outline: none; }
                 button { width: 100%; padding: 14px; border-radius: 8px; background-color: #2563eb; color: white; font-weight: bold; cursor: pointer; border: none; }
                 #error-msg { color: #ef4444; margin-top: 16px; display: none; }
             </style>
@@ -225,6 +222,7 @@ services:
         EOFHTML
 
         chmod -R 755 /usr/share/nginx/html
+        
         echo "3. Cau hinh Nginx Proxy..."
         cat << 'EOF' > /etc/nginx/conf.d/default.conf
         server { 
@@ -255,5 +253,5 @@ volumes:
   mariadb-data:
   frontend-dist:
   # VOLUME MỚI HOÀN TOÀN ĐỂ XÓA LỖI CŨ
-  nats_data_final_v4:
+  nats_data_final_v5:
   plugnmeet-upload:
