@@ -12,52 +12,17 @@ services:
       - mariadb-data:/var/lib/mysql
     restart: unless-stopped
 
-  # Container số 1: Copy file cấu hình từ source code vào Volume chung
-  init-configs:
-    image: alpine
-    volumes:
-      - ./:/source_code:ro # Mount toàn bộ source code từ Coolify vào đây (Chỉ đọc)
-      - config-vol:/app-configs # Volume chung để chứa cấu hình
-    command: >
-      /bin/sh -c "
-      cp /source_code/nats-server.conf /app-configs/nats-server.conf &&
-      cp /source_code/config.yaml /app-configs/config.yaml &&
-      echo 'Configs copied successfully!'
-      "
-
-  # Container số 2: Tải Frontend của hãng và giải nén vào Volume chung
-  init-client-files:
-    image: alpine
-    volumes:
-      - client-files:/client
-    command: >
-      /bin/sh -c "
-      apk add --no-cache wget unzip &&
-      wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/plugnmeet-client.zip &&
-      unzip -o /tmp/client.zip -d /tmp/ext &&
-      cp -rf /tmp/ext/* /client/ &&
-      echo \"window.PLUGNMEET_SERVER_URL = 'https://api-meet.thanhnguyen.group';\" > /client/config.js &&
-      mkdir -p /client/assets/imgs &&
-      echo \"window.PLUGNMEET_SERVER_URL = 'https://api-meet.thanhnguyen.group';\" > /client/assets/config.js &&
-      wget -qO /client/assets/imgs/main-logo-dark.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-      wget -qO /client/assets/imgs/main-logo-light.png 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-      wget -qO /client/favicon.ico 'https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png' || true &&
-      echo 'Client files downloaded successfully!'
-      "
-
   nats:
     image: nats:2.12-alpine
-    depends_on:
-      init-configs:
-        condition: service_completed_successfully
     command:
       - "-DVV"
       - "-config"
-      - "/app-configs/nats-server.conf" # Đọc file cấu hình đã được copy vào Volume
+      - "/app/nats-server.conf" # Gọi file cấu hình từ shared volume
     ports:
       - "4222:4222"
     volumes:
-      - config-vol:/app-configs
+      # Chúng ta sẽ mount thư mục app từ plugnmeet-server sang nats
+      - shared-app-vol:/app
       - nats-data:/data/jetstream
     restart: unless-stopped
 
@@ -66,21 +31,16 @@ services:
     restart: unless-stopped
 
   plugnmeet-server:
-    image: mynaparrot/plugnmeet-server:v2.1.6
+    # BÍ QUYẾT: Yêu cầu Coolify build image từ Dockerfile ở thư mục hiện tại
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
-      mariadb:
-        condition: service_started
-      nats:
-        condition: service_started
-      init-configs:
-        condition: service_completed_successfully
-      init-client-files:
-        condition: service_completed_successfully
+      - mariadb
     volumes:
-      - config-vol:/app-configs
+      # Copy toàn bộ nội dung /app ra volume dùng chung
+      - shared-app-vol:/app
       - plugnmeet-upload:/app/upload
-      - client-files:/app/client/dist # Cung cấp Frontend files cho Backend
-    command: ["plugnmeet-server", "-config", "/app-configs/config.yaml"] # Đọc config từ Volume
     environment:
       - LD_LIBRARY_PATH=/app/lib
     expose:
@@ -90,17 +50,16 @@ services:
   plugnmeet-client:
     image: nginx:alpine
     depends_on:
-      plugnmeet-server:
-        condition: service_started
-      init-client-files:
-        condition: service_completed_successfully
+      - plugnmeet-server
+      - nats
     volumes:
-      - client-files:/usr/share/nginx/html # Đọc Frontend files từ Volume
+      # Đọc code frontend trực tiếp từ Volume do plugnmeet-server chia sẻ
+      - shared-app-vol:/app
     command: >
       /bin/sh -c "
       echo 'server { 
         listen 80; 
-        root /usr/share/nginx/html; 
+        root /app/client/dist; 
         index index.html; 
         location / { 
           try_files \$$uri /index.html; 
@@ -123,5 +82,5 @@ volumes:
   mariadb-data:
   nats-data:
   plugnmeet-upload:
-  client-files:
-  config-vol:
+  # Volume dùng chung để plugnmeet-server chia sẻ file config và frontend cho NATS và Nginx
+  shared-app-vol:
