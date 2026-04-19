@@ -1,5 +1,0 @@
-FROM mynaparrot/plugnmeet-server:v2.1.6
-
-# Copy 2 file cấu hình từ repo Github vào trong container
-COPY config.yaml /app/config.yaml
-COPY nats-server.conf /app/nats-server.conf
