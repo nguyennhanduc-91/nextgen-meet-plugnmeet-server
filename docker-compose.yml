@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. Server NATS (Đã đổi sang tự Build)
+  # 1. Server NATS
   nats-server:
     build: 
       context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
@@ -10,7 +10,7 @@ services:
     networks:
       - coolify
 
-  # 2. Cơ sở dữ liệu MariaDB (Giữ nguyên)
+  # 2. Cơ sở dữ liệu MariaDB
   plugnmeet-db:
     image: mariadb:10.11
     container_name: plugnmeet-db
@@ -22,18 +22,18 @@ services:
     networks:
       - coolify
 
-  # 3. Backend API (Giữ nguyên)
+  # 3. Backend API (Đã thêm cổng 8080)
   plugnmeet-server:
-    build:
-  context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
-container_name: plugnmeet-server
-depends_on:
-  - nats-server
-  - plugnmeet-db
-ports:
-  - "8080:8080"
-networks:
-  - coolify
+    build: 
+      context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
+    container_name: plugnmeet-server
+    depends_on:
+      - nats-server
+      - plugnmeet-db
+    ports:
+      - "8080:8080"
+    networks:
+      - coolify
 
 networks:
   coolify:
