@@ -24,7 +24,7 @@ services:
 
   # 3. Backend API (Giữ nguyên)
   plugnmeet-server:
-build:
+    build:
   context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
 container_name: plugnmeet-server
 depends_on:
