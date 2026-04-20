@@ -1,212 +1,22 @@
 version: '3.8'
-
 services:
-  # ==========================================
-  # 1. DATABASE (MariaDB 10.11)
-  # ==========================================
-  mariadb:
+  plugnmeet-db:
     image: mariadb:10.11
     environment:
-      MYSQL_ROOT_PASSWORD: tn_root_secure_password_2026
+      MYSQL_ROOT_PASSWORD: your_root_password
       MYSQL_DATABASE: plugnmeet
-      MYSQL_USER: tn_plugnmeet_user
-      MYSQL_PASSWORD: tn_db_password_2026
     volumes:
-      - mariadb-data:/var/lib/mysql
-    restart: unless-stopped
+      - plugnmeet_db_data:/var/lib/mysql
 
-  # ==========================================
-  # 2. MESSAGING (NATS JetStream)
-  # ==========================================
-  nats:
-    image: nats:2.12-alpine
-    command:
-      - /bin/sh
-      - -c
-      - |
-        mkdir -p /etc/nats
-        cat << 'EOF' > /etc/nats/nats-server.conf
-        port: 4222
-        websocket { port: 8222, no_tls: true }
-        jetstream: { store_dir: /data/jetstream }
-        accounts {
-            PNM: {
-                jetstream: enabled
-                users: [ { nkey: UD4JADBMDSQCA5D475KSMFV43TAINASJ3TIEFQ7LP43XENPMQYFTRFKP } ]
-            }
-        }
-        EOF
-        exec nats-server -config /etc/nats/nats-server.conf
-    volumes:
-      - nats-data-v7:/data/jetstream
-    restart: unless-stopped
+  nats-server:
+    image: nats:2.10-alpine
+    command: "-c /etc/nats/nats.conf"
+    # Bạn có thể dùng file nats_server_sample.conf của hãng làm mẫu
 
-  # ==========================================
-  # 3. BACKEND (PlugNmeet Server v2.1.6)
-  # ==========================================
   plugnmeet-server:
-    image: mynaparrot/plugnmeet-server:v2.1.6
+    build: .
     depends_on:
-      - mariadb
-      - nats
-    volumes:
-      - frontend-assets:/app/client/dist
-      - plugnmeet-upload:/app/upload
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        echo "1. Dang tao file cau hinh config.yaml..."
-        mkdir -p /app/client/dist/assets/css
-        cat << 'EOF' > /app/config.yaml
-        app_info:
-          auth_header_token: "TN_Admin_Key_2026"
-          secret: "TN_Secret_Key_Super_Secure_2026"
-        client:
-          path: "/app/client/dist"
-          port: 8080
-        livekit_info:
-          host: "wss://livekit.thanhnguyen.group"
-          api_key: "API_nextgen_admin_key"
-          secret: "SEC_thanhnguyen_group_super_secure_9999"
-        redis_info:
-          host: "194.233.84.253:6379"
-          password: "fE0RUoc9Y7vvUReP2bgoNgN7mwYMZ3fILM1vRGLo1kzwJOKOLT5V0ovdY3jY8v8c"
-          dbname: 0
-        database_info:
-          driver_name: "mysql"
-          host: "mariadb"
-          port: 3306
-          username: "tn_plugnmeet_user"
-          password: "tn_db_password_2026"
-          db: "plugnmeet"
-        nats_info:
-          nats_urls: ["nats://nats:4222"]
-          nats_ws_urls: ["wss://meet.thanhnguyen.group/nats"]
-          account: PNM
-          nkey: "SUAGSRI6D537QEHEK7G5KAN4KINSL77FTRTAJGA2KTFRR7AIOMA43P4PRE"
-          auth_callout_issuer_private: "SAAMTMBUANSRW3XDXZBIBF4JYRRUMWGV2GZT5MQ54VNWNRPN2Y4J46NQSA"
-          auth_callout_xkey_private: "SXAMBYY64TKXZCLFQGWDATGPIPURA4SIV3GDCSGG7A74USK6XDO6WQTIUU"
-          room_stream_name: "pnmrooms"
-          project_info_kv_name: "pnmproj"
-          recorder_info_kv_name: "pnmrec"
-          subjects:
-            system_api_worker: "sysApiWorker"
-            system_js_worker: "sysJsWorker"
-            system_core_worker: "sysCoreWorker"
-            system_public: "sysPublic"
-            system_private: "sysPrivate"
-            chat: "chat"
-            whiteboard: "whiteboard"
-            data_channel: "dataChannel"
-        upload_file_settings:
-          path: "/app/upload"
-        EOF
-        
-        echo "2. Cho ha tang san sang..."
-        sleep 12
-        echo "3. Khoi dong PlugNmeet Core..."
-        exec /usr/local/bin/docker-entrypoint.sh plugnmeet-server -config /app/config.yaml
-    expose:
-      - "8080"
-    restart: unless-stopped
-
-  # ==========================================
-  # 4. FRONTEND (Nginx + Custom UI)
-  # ==========================================
-  plugnmeet-client:
-    image: nginx:alpine
-    depends_on:
-      - plugnmeet-server
-    volumes:
-      - frontend-assets:/usr/share/nginx/html/room
-    command:
-      - /bin/sh
-      - -c
-      - |
-        apk add --no-cache wget unzip
-        rm -rf /usr/share/nginx/html/*
-        mkdir -p /usr/share/nginx/html/room
-        
-        echo "Tai va giai nen giao dien goc..."
-        wget -qO /tmp/client.zip https://github.com/mynaparrot/plugNmeet-client/releases/download/v2.1.7/client.zip
-        unzip -o /tmp/client.zip -d /tmp/ext
-        cp -rf /tmp/ext/client/dist/* /usr/share/nginx/html/room/
-        chmod -R 777 /usr/share/nginx/html/room
-        
-        echo "Tao giao dien dang nhap toi gian mang thuong hieu Thanh Nguyen Group..."
-        cat << 'EOFHTML' > /usr/share/nginx/html/index.html
-        <!DOCTYPE html>
-        <html lang="vi">
-        <head>
-            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>NextGen Meet</title>
-            <style>
-                body { font-family: 'Segoe UI', sans-serif; background: #0b0f19; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                .card { background: #111827; padding: 40px; border-radius: 20px; width: 350px; border: 1px solid #1f2937; text-align: center; }
-                input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: white; box-sizing: border-box; outline: none; }
-                button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-                button:hover { background: #1d4ed8; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <img src="https://raw.githubusercontent.com/nguyennhanduc-91/nextgen-meet-frontend/main/ivekit-meet-open-graph.png" style="max-width:150px;margin-bottom:20px;">
-                <h2 style="margin-bottom:25px;">NextGen Meet</h2>
-                <input type="text" id="name" placeholder="Tên của bạn">
-                <input type="text" id="room" value="NextGen-Room">
-                <button onclick="go()">VÀO PHÒNG HỌP</button>
-                <p id="msg" style="color:#ef4444; font-size:13px; margin-top:15px; display:none;"></p>
-            </div>
-            <script>
-                async function go() {
-                    const elMsg = document.getElementById('msg');
-                    const name = document.getElementById('name').value;
-                    const room = document.getElementById('room').value;
-                    if(!name) return;
-                    elMsg.style.display = 'none';
-                    try {
-                        const res = await fetch('/auth/room/getJoinToken', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'API-KEY': 'TN_Admin_Key_2026', 'API-SECRET': 'TN_Secret_Key_Super_Secure_2026' },
-                            body: JSON.stringify({ room_id: room, user_info: { name: name, user_id: "u_"+Date.now(), is_admin: true } })
-                        });
-                        const data = await res.json();
-                        if(data.status) window.location.href = "/room/?access_token=" + data.token;
-                        else { elMsg.innerText = data.msg; elMsg.style.display = 'block'; }
-                    } catch(e) { elMsg.innerText = "Lỗi kết nối Server!"; elMsg.style.display = 'block'; }
-                }
-            </script>
-        </body>
-        </html>
-        EOFHTML
-
-        echo "Cau hinh Nginx Proxy..."
-        cat << 'EOF' > /etc/nginx/conf.d/default.conf
-        server { 
-          listen 80; root /usr/share/nginx/html; index index.html;
-          location / { try_files $uri $uri/ /index.html; }
-          location /room/ { try_files $uri $uri/ /room/index.html; }
-          location /auth/ {
-            proxy_pass http://plugnmeet-server:8080/auth/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-          }
-          location /nats {
-            proxy_pass http://nats:8222;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "Upgrade";
-          }
-        }
-        EOF
-        exec nginx -g 'daemon off;'
-    expose:
-      - "80"
-    restart: unless-stopped
-
-volumes:
-  mariadb-data:
-  # Volume chia sẻ asset để Server không bị lỗi failed to read css
-  frontend-assets:
-  nats-data-v7:
-  plugnmeet-upload:
+      - plugnmeet-db
+      - nats-server
+    environment:
+      - PLUGNMEET_CONFIG_PATH=/app/config.yaml
