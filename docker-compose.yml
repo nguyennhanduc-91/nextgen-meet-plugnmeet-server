@@ -24,14 +24,16 @@ services:
 
   # 3. Backend API (Giữ nguyên)
   plugnmeet-server:
-    build: 
-      context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
-    container_name: plugnmeet-server
-    depends_on:
-      - nats-server
-      - plugnmeet-db
-    networks:
-      - coolify
+build:
+  context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
+container_name: plugnmeet-server
+depends_on:
+  - nats-server
+  - plugnmeet-db
+ports:
+  - "8080:8080"
+networks:
+  - coolify
 
 networks:
   coolify:
