@@ -1,18 +1,16 @@
 version: '3.8'
 
 services:
+  # 1. Server NATS (Đã đổi sang tự Build)
   nats-server:
-    image: nats:2.10-alpine
+    build: 
+      context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
+      dockerfile: Dockerfile.nats
     container_name: nats-server
-    # THAY ĐỔI LỆNH CHẠY: Yêu cầu NATS nạp file cấu hình
-    command: "-c /etc/nats/nats-server.conf"
-    volumes:
-      # MOUNT FILE: Ánh xạ file từ GitHub vào trong Container
-      - ./nats_server_sample.conf:/etc/nats/nats-server.conf
     networks:
       - coolify
 
-  # 2. Cơ sở dữ liệu MariaDB
+  # 2. Cơ sở dữ liệu MariaDB (Giữ nguyên)
   plugnmeet-db:
     image: mariadb:10.11
     container_name: plugnmeet-db
@@ -24,9 +22,8 @@ services:
     networks:
       - coolify
 
-  # 3. Backend API
+  # 3. Backend API (Giữ nguyên)
   plugnmeet-server:
-    # Ở đây chúng ta yêu cầu Coolify build từ Dockerfile trên Github thay vì kéo image thuần
     build: 
       context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
     container_name: plugnmeet-server
