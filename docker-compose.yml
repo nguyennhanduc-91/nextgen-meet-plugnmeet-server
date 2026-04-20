@@ -7,6 +7,13 @@ services:
       context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
       dockerfile: Dockerfile.nats
     container_name: nats-server
+    # Mở cổng nội bộ (Không xung đột máy vật lý)
+    expose:
+      - "8222"
+      - "4222"
+    # Ép Traefik chuyển hướng tên miền vào đúng cổng 8222
+    labels:
+      - "traefik.http.services.nats-server.loadbalancer.server.port=8222"
     networks:
       - coolify
 
@@ -22,7 +29,7 @@ services:
     networks:
       - coolify
 
-  # 3. Backend API (Đã thêm cổng 8080)
+  # 3. Backend API
   plugnmeet-server:
     build: 
       context: https://github.com/nguyennhanduc-91/nextgen-meet-plugnmeet-server.git#main
@@ -30,6 +37,12 @@ services:
     depends_on:
       - nats-server
       - plugnmeet-db
+    # Mở cổng nội bộ 8080
+    expose:
+      - "8080"
+    # Ép Traefik chuyển hướng tên miền vào đúng cổng 8080
+    labels:
+      - "traefik.http.services.plugnmeet-server.loadbalancer.server.port=8080"
     networks:
       - coolify
 
