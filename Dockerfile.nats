@@ -1,0 +1,8 @@
+# Lấy bản NATS nguyên gốc
+FROM nats:2.10-alpine
+
+# Copy file cấu hình trên Github của bạn vào đúng vị trí bên trong NATS
+COPY nats_server_sample.conf /etc/nats/nats-server.conf
+
+# Khởi động NATS và yêu cầu nó đọc file này
+CMD ["-js", "-p", "4222", "-m", "8222", "-c", "/etc/nats/nats-server.conf"]
