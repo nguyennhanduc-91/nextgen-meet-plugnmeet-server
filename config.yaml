@@ -22,6 +22,8 @@ room_default_settings:
   max_duration: 0 
   max_participants: 0 
   max_num_breakout_rooms: 6
+  # Cấu hình mới: Đóng phòng ngay lập tức khi không còn ai (0 giây)
+  empty_timeout: 0
 
 log_settings:
   log_file: "./log/plugNmeet.log"
