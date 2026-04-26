@@ -1,8 +1,20 @@
-FROM etherpad/etherpad:latest
+# Sử dụng base image chuẩn đã được plugNmeet tối ưu
+FROM mynaparrot/plugnmeet-etherpad:latest
 
-# 1. Chèn quyền client_credentials cho OIDC để plugNmeet có thể gọi API tạo phòng Notepad
-RUN sed -i 's/"grant_types": \["authorization_code"\]/"grant_types": ["authorization_code", "client_credentials"]/g' /opt/etherpad-lite/settings.json.template
+# Tạm chuyển sang quyền root để thực thi các lệnh can thiệp hệ thống
+USER root
 
-# 2. Tự động chèn API Key tĩnh
-RUN echo "thanhnguyen_etherpad_key_2026" > /opt/etherpad-lite/APIKEY.txt
-RUN chown etherpad:etherpad /opt/etherpad-lite/APIKEY.txt
+# 1. Cài đặt 'nano' (phòng hờ tương lai sếp cần chui vào container sửa nóng)
+# Cài đặt 'sed' (công cụ xử lý chuỗi cực mạnh của Linux)
+RUN apt-get update && \
+    apt-get install -y nano sed && \
+    rm -rf /var/lib/apt/lists/*
+
+# 2. VÁ LỖI CẤU TRÚC OIDC BẰNG LỆNH SED TỰ ĐỘNG (FIX LỖI 400 INVALID_REQUEST)
+# Lệnh này sẽ quét toàn bộ file settings.json, tự động tìm mảng grant_types và response_types
+# để chèn thêm chuẩn 'client_credentials' và 'token' vào.
+RUN sed -i 's/"grant_types": \["authorization_code"\]/"grant_types": \["authorization_code", "client_credentials"\]/g' /opt/etherpad-lite/settings.json && \
+    sed -i 's/"response_types": \["code"\]/"response_types": \["code", "token"\]/g' /opt/etherpad-lite/settings.json
+
+# 3. Trả lại quyền thực thi cho user etherpad (để đảm bảo tính bảo mật của container)
+USER etherpad
