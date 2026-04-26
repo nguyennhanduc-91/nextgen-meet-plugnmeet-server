@@ -28,7 +28,6 @@ services:
       MYSQL_DATABASE: "plugnmeet"
     volumes:
       - plugnmeet_db_data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - coolify
  # Etherpad (Shared Notepad)
