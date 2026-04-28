@@ -13,6 +13,14 @@ import (
 
 func summarize(ctx context.Context, p *OpenAIProvider, model string, history []*plugnmeet.InsightsAITextChatContent) (string, uint32, uint32, error) {
 	var messages []Message
+
+	if val, ok := p.options["system_prompt"].(string); ok && val != "" {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: val,
+		})
+	}
+
 	for _, h := range history {
 		role := "user"
 		if string(h.Role) == "model" {

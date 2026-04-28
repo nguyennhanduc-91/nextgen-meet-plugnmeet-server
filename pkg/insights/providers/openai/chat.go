@@ -19,6 +19,14 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 	streamId := uuid.NewString()
 
 	var messages []Message
+	
+	if val, ok := p.options["system_prompt"].(string); ok && val != "" {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: val,
+		})
+	}
+
 	for _, h := range history {
 		role := "user"
 		if string(h.Role) == "model" {
@@ -82,6 +90,9 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 		reader := bufio.NewReader(resp.Body)
 		var totalUsage *Usage
 
+		var hasStartedReasoning bool
+		var hasStartedContent bool
+
 		for {
 			line, err := reader.ReadBytes('\n')
 			if err != nil {
@@ -112,10 +123,21 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 				reasoningContent := chunk.Choices[0].Delta.ReasoningContent
 				
 				var outputText string
+				
 				if reasoningContent != "" {
-					outputText += reasoningContent
+					if !hasStartedReasoning {
+						outputText += "> *Đang suy nghĩ...*\n> "
+						hasStartedReasoning = true
+					}
+					// Replace newlines with blockquote newlines so it stays in the blockquote
+					outputText += strings.ReplaceAll(reasoningContent, "\n", "\n> ")
 				}
+
 				if deltaContent != "" {
+					if hasStartedReasoning && !hasStartedContent {
+						outputText += "\n\n---\n\n"
+					}
+					hasStartedContent = true
 					outputText += deltaContent
 				}
 
