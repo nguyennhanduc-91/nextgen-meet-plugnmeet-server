@@ -121,19 +121,23 @@ insights:
         credentials:
           api_key: "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" 
         options:
-          # Bắt buộc phải cho base_url vào trong thẻ options
           base_url: "https://integrate.api.nvidia.com/v1" 
 
   services:
-   ai_text_chat:
+    ai_text_chat:
       provider: "openai"
       id: "nvidia_deepseek"
       options:
-        chat_model: "deepseek-ai/deepseek-v3.2" # Đổi sang bản này
+        chat_model: "nvidia/nemotron-3-super-120b-a12b"
         max_tokens: 16384
+        temperature: 1.0
+        top_p: 0.95
+        reasoning_budget: 16384
+        enable_thinking: true
+
     meeting_summarizing:
       provider: "openai"
       id: "nvidia_deepseek"
       options:
-        summarize_model: "deepseek-ai/deepseek-v3.2" # Đổi sang bản này
+        summarize_model: "nvidia/nemotron-3-super-120b-a12b"
         max_tokens: 16384
