@@ -155,16 +155,15 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 				
 				if reasoningContent != "" && !hideReasoning {
 					if !hasStartedReasoning {
-						outputText += "> *Đang suy nghĩ...*\n> "
+						outputText += "<!--THINKING_START-->"
 						hasStartedReasoning = true
 					}
-					// Replace newlines with blockquote newlines so it stays in the blockquote
-					outputText += strings.ReplaceAll(reasoningContent, "\n", "\n> ")
+					outputText += reasoningContent
 				}
 
 				if deltaContent != "" {
 					if hasStartedReasoning && !hasStartedContent && !hideReasoning {
-						outputText += "\n\n---\n\n"
+						outputText += "<!--THINKING_END-->"
 					}
 					hasStartedContent = true
 					outputText += deltaContent
