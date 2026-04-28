@@ -36,6 +36,22 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 		Stream:   true,
 	}
 
+	if val, ok := p.options["max_tokens"].(float64); ok {
+		reqBody.MaxTokens = uint32(val)
+	}
+	if val, ok := p.options["temperature"].(float64); ok {
+		reqBody.Temperature = float32(val)
+	}
+	if val, ok := p.options["top_p"].(float64); ok {
+		reqBody.TopP = float32(val)
+	}
+	if val, ok := p.options["reasoning_budget"].(float64); ok {
+		reqBody.ReasoningBudget = uint32(val)
+	}
+	if val, ok := p.options["enable_thinking"].(bool); ok && val {
+		reqBody.ChatTemplateKwargs = &TemplateKwargs{EnableThinking: true}
+	}
+
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal openai request: %w", err)
@@ -93,10 +109,20 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 
 			if len(chunk.Choices) > 0 {
 				deltaContent := chunk.Choices[0].Delta.Content
+				reasoningContent := chunk.Choices[0].Delta.ReasoningContent
+				
+				var outputText string
+				if reasoningContent != "" {
+					outputText += reasoningContent
+				}
 				if deltaContent != "" {
+					outputText += deltaContent
+				}
+
+				if outputText != "" {
 					resultChan <- &plugnmeet.InsightsAITextChatStreamResult{
 						Id:        streamId,
-						Text:      deltaContent,
+						Text:      outputText,
 						CreatedAt: fmt.Sprintf("%d", time.Now().UnixMilli()),
 					}
 				}

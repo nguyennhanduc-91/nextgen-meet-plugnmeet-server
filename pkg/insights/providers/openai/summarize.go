@@ -35,6 +35,22 @@ func summarize(ctx context.Context, p *OpenAIProvider, model string, history []*
 		Stream:   false,
 	}
 
+	if val, ok := p.options["max_tokens"].(float64); ok {
+		reqBody.MaxTokens = uint32(val)
+	}
+	if val, ok := p.options["temperature"].(float64); ok {
+		reqBody.Temperature = float32(val)
+	}
+	if val, ok := p.options["top_p"].(float64); ok {
+		reqBody.TopP = float32(val)
+	}
+	if val, ok := p.options["reasoning_budget"].(float64); ok {
+		reqBody.ReasoningBudget = uint32(val)
+	}
+	if val, ok := p.options["enable_thinking"].(bool); ok && val {
+		reqBody.ChatTemplateKwargs = &TemplateKwargs{EnableThinking: true}
+	}
+
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", 0, 0, fmt.Errorf("failed to marshal openai request: %w", err)

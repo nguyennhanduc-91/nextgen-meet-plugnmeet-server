@@ -15,6 +15,7 @@ import (
 type OpenAIProvider struct {
 	apiKey  string
 	baseURL string
+	options map[string]interface{}
 	client  *http.Client
 	logger  *logrus.Entry
 }
@@ -32,6 +33,7 @@ func NewProvider(providerAccount *config.ProviderAccount, serviceConfig *config.
 	return &OpenAIProvider{
 		apiKey:  providerAccount.Credentials.APIKey,
 		baseURL: baseURL,
+		options: providerAccount.Options,
 		client:  &http.Client{},
 		logger:  log,
 	}, nil
