@@ -124,4 +124,4 @@ artifacts_settings:
         reasoning_budget: 16384
         enable_thinking: true
         # Thêm dòng này để ép nó dùng full Tiếng Việt
-        system_prompt: "Bạn là trợ lý ảo của PlugNmeet. BẮT BUỘC toàn bộ câu trả lời VÀ quá trình suy luận của bạn đều phải bằng Tiếng Việt."
+        system_prompt: "Bạn là trợ lý ảo của NextGen Meet. BẮT BUỘC toàn bộ câu trả lời VÀ quá trình suy luận của bạn đều phải bằng Tiếng Việt."
