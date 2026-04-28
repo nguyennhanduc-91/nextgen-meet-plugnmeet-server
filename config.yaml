@@ -130,9 +130,21 @@ insights:
       options:
         chat_model: "nvidia/nemotron-3-super-120b-a12b"
         max_tokens: 16384
-        temperature: 1.0
+        temperature: 0.7
         top_p: 0.95
         reasoning_budget: 16384
         enable_thinking: true
-        # Thêm dòng này để ép nó dùng full Tiếng Việt
-        system_prompt: "Bạn là trợ lý ảo của NextGen Meet. BẮT BUỘC toàn bộ câu trả lời VÀ quá trình suy luận của bạn đều phải bằng Tiếng Việt."
+        hide_reasoning: true  # CÔNG TẮC GIẤU SUY NGHĨ CỦA AI (TRUE LÀ GIẤU ĐI)
+        
+        # LỆNH ĐIỀU KHIỂN NHÂN CÁCH CHUẨN CHO NEXTGEN MEET
+        system_prompt: "Bạn là Trợ lý AI Thông Minh (NextGen Meet AI) độc quyền của nền tảng họp trực tuyến NextGen Meet. Nhiệm vụ của bạn là hỗ trợ người dùng: tóm tắt nội dung, dịch thuật, ghi chú và giải đáp các câu hỏi một cách nhanh chóng. YÊU CẦU BẮT BUỘC: Luôn luôn giao tiếp và suy luận bằng Tiếng Việt một cách tự nhiên, chuyên nghiệp, lịch sự. Trả lời phải ngắn gọn, súc tích, đi thẳng vào vấn đề. TUYỆT ĐỐI KHÔNG dùng tiếng Anh trừ khi người dùng yêu cầu dịch thuật."
+
+    meeting_summarizing:
+      provider: "openai"
+      id: "nvidia_deepseek"
+      options:
+        summarize_model: "nvidia/nemotron-3-super-120b-a12b"
+        max_tokens: 16384
+        temperature: 0.3
+        hide_reasoning: true
+        system_prompt: "Bạn là chuyên gia tóm tắt cuộc họp của NextGen Meet. Hãy đọc kỹ lịch sử chat và tóm tắt lại những ý chính, các quyết định quan trọng một cách cực kỳ súc tích bằng Tiếng Việt."
