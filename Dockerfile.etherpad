@@ -15,5 +15,8 @@ RUN sed -i 's/return this.readPrefs_()\[prefName\];/return (this.readPrefs_() ||
     sed -i 's/const prefs = this.readPrefs_();/const prefs = this.readPrefs_() || {};/g' /opt/etherpad-lite/src/static/js/pad_cookie.js && \
     sed -i 's/if (this.readPrefs_() == null)/if (false)/g' /opt/etherpad-lite/src/static/js/pad_cookie.js
 
-# 3. Trả lại quyền thực thi cho user etherpad
+# 4. VÁ LỖI CONSOLE F12: TẠO FILE messageHandler.js BỊ THIẾU ĐỂ XÓA RÁC LOG
+RUN echo "exports.handleClientMessage_shoutMessage = function() {};" > /opt/etherpad-lite/src/static/js/messageHandler.js
+
+#  Trả lại quyền thực thi cho user etherpad
 USER etherpad
