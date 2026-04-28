@@ -99,8 +99,7 @@ shared_notepad:
   etherpad_hosts:
     - id: "node_01"
       host: "https://note.thanhnguyen.group"
-      client_id: "plugNmeet"
-      client_secret: "thanhnguyen_etherpad_key_2026"
+      api_key: "thanhnguyen_etherpad_key_2026"  # <--- THÊM DÒNG NÀY (Đảm bảo giống hệt nội dung file APIKEY.txt của Etherpad)
 
 analytics_settings:
   enabled: true
