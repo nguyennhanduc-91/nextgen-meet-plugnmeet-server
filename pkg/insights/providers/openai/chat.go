@@ -92,6 +92,11 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 
 		var hasStartedReasoning bool
 		var hasStartedContent bool
+		
+		hideReasoning := false
+		if val, ok := p.options["hide_reasoning"].(bool); ok && val {
+			hideReasoning = true
+		}
 
 		for {
 			line, err := reader.ReadBytes('\n')
@@ -124,7 +129,7 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 				
 				var outputText string
 				
-				if reasoningContent != "" {
+				if reasoningContent != "" && !hideReasoning {
 					if !hasStartedReasoning {
 						outputText += "> *Đang suy nghĩ...*\n> "
 						hasStartedReasoning = true
@@ -134,7 +139,7 @@ func newChatStream(ctx context.Context, p *OpenAIProvider, model string, history
 				}
 
 				if deltaContent != "" {
-					if hasStartedReasoning && !hasStartedContent {
+					if hasStartedReasoning && !hasStartedContent && !hideReasoning {
 						outputText += "\n\n---\n\n"
 					}
 					hasStartedContent = true
