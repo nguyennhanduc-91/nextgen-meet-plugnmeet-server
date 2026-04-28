@@ -10,5 +10,10 @@ RUN apk add --no-cache nano sed
 # 2. VÁ LỖI CẤU TRÚC OIDC BẰNG LỆNH SED TỰ ĐỘNG (FIX LỖI 400 VÀ LỖI 401)
 RUN sed -i 's/"grant_types": \["authorization_code"\]/"grant_types": ["authorization_code", "client_credentials"], "extraParams": [{"name": "admin", "value": true}]/g' /opt/etherpad-lite/settings.json
 
+# 3. VÁ LỖI CRASH KHI TRÌNH DUYỆT CHẶN COOKIE BÊN THỨ 3 (LỖI Cannot read properties of null)
+RUN sed -i 's/return this.readPrefs_()\[prefName\];/return (this.readPrefs_() || {})[prefName];/g' /opt/etherpad-lite/src/static/js/pad_cookie.js && \
+    sed -i 's/const prefs = this.readPrefs_();/const prefs = this.readPrefs_() || {};/g' /opt/etherpad-lite/src/static/js/pad_cookie.js && \
+    sed -i 's/if (this.readPrefs_() == null)/if (false)/g' /opt/etherpad-lite/src/static/js/pad_cookie.js
+
 # 3. Trả lại quyền thực thi cho user etherpad
 USER etherpad
