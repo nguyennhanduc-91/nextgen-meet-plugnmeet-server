@@ -113,6 +113,17 @@ artifacts_settings:
   del_artifacts_backup_path: "./artifacts/trash"
   del_artifacts_backup_duration: 72h
 
+insights:
+  enabled: true
+  providers:
+    openai:
+      - id: "nvidia_deepseek"
+        credentials:
+          api_key: "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" 
+        options:
+          base_url: "https://integrate.api.nvidia.com/v1" 
+
+  services:
     ai_text_chat:
       provider: "openai"
       id: "nvidia_deepseek"
