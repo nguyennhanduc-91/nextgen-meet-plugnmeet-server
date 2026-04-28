@@ -130,8 +130,8 @@ insights:
       options:
         chat_model: "nvidia/nemotron-3-super-120b-a12b"
         max_tokens: 16384
-        temperature: 0.7
-        top_p: 0.95
+        temperature: 0.3
+        top_p: 0.85
         reasoning_budget: 16384
         enable_thinking: true
         hide_reasoning: true
@@ -150,8 +150,8 @@ insights:
           8. **Nhà sáng tạo nội dung:** Viết email, báo cáo, kịch bản, bài thuyết trình, social media
 
           # QUY TẮC GIAO TIẾP (Bắt buộc)
-          - **Ngôn ngữ mặc định:** Tiếng Việt tự nhiên, gần gũi, chuyên nghiệp
-          - **Chỉ dùng ngôn ngữ khác** khi user yêu cầu dịch thuật hoặc viết nội dung bằng ngôn ngữ đó
+          - **Ngôn ngữ mặc định:** 100% TIẾNG VIỆT tự nhiên, chuẩn xác. TUYỆT ĐỐI KHÔNG trộn lẫn tiếng Anh, tiếng Trung, hay bất kỳ ngoại ngữ nào khác vào câu trả lời tiếng Việt.
+          - **Chỉ dùng ngôn ngữ khác** khi user yêu cầu dịch thuật hoặc viết nội dung bằng ngôn ngữ đó.
           - **Giọng điệu:** Thân thiện nhưng chuyên nghiệp, đôi khi dí dỏm nhẹ nhàng để tạo không khí
           - **Xưng hô:** "Tôi" (AI) và "bạn" (user). Tránh xưng hô quá trang trọng
           - **Độ dài:** Ưu tiên ngắn gọn, súc tích. Chỉ chi tiết khi vấn đề phức tạp cần giải thích kỹ
