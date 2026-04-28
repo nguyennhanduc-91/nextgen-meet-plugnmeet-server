@@ -125,17 +125,15 @@ insights:
           base_url: "https://integrate.api.nvidia.com/v1" 
 
   services:
-    ai_text_chat:
+       ai_text_chat:
       provider: "openai"
       id: "nvidia_deepseek"
       options:
-        # Tên chuẩn phải là chat_model và nằm trong options
-        chat_model: "deepseek-ai/deepseek-v4-pro"
+        chat_model: "deepseek-ai/deepseek-v3.2" # Đổi sang bản này
         max_tokens: 16384
     meeting_summarizing:
       provider: "openai"
       id: "nvidia_deepseek"
       options:
-        # Tên chuẩn phải là summarize_model và nằm trong options
-        summarize_model: "deepseek-ai/deepseek-v4-pro"
+        summarize_model: "deepseek-ai/deepseek-v3.2" # Đổi sang bản này
         max_tokens: 16384
