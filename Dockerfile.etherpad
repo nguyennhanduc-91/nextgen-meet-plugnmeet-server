@@ -8,10 +8,7 @@ USER root
 RUN apk add --no-cache nano sed
 
 # 2. VÁ LỖI CẤU TRÚC OIDC BẰNG LỆNH SED TỰ ĐỘNG (FIX LỖI 400 INVALID_REQUEST)
-# Lệnh này sẽ quét toàn bộ file settings.json, tự động tìm mảng grant_types và response_types
-# để chèn thêm chuẩn 'client_credentials' và 'token' vào.
-RUN sed -i 's/"grant_types": \["authorization_code"\]/"grant_types": \["authorization_code", "client_credentials"\]/g' /opt/etherpad-lite/settings.json && \
-    sed -i 's/"response_types": \["code"\]/"response_types": \["code", "token"\]/g' /opt/etherpad-lite/settings.json
+RUN sed -i 's/"grant_types": \["authorization_code"\]/"grant_types": \["authorization_code", "client_credentials"\]/g' /opt/etherpad-lite/settings.json
 
 # 3. Trả lại quyền thực thi cho user etherpad
 USER etherpad
