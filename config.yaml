@@ -125,7 +125,7 @@ insights:
           base_url: "https://integrate.api.nvidia.com/v1" 
 
   services:
-       ai_text_chat:
+   ai_text_chat:
       provider: "openai"
       id: "nvidia_deepseek"
       options:
