@@ -33,7 +33,7 @@ func NewProvider(providerAccount *config.ProviderAccount, serviceConfig *config.
 	return &OpenAIProvider{
 		apiKey:  providerAccount.Credentials.APIKey,
 		baseURL: baseURL,
-		options: providerAccount.Options,
+		options: serviceConfig.Options,
 		client:  &http.Client{},
 		logger:  log,
 	}, nil
