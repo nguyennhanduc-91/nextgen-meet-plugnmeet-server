@@ -97,7 +97,7 @@ recorder_info:
 shared_notepad:
   enabled: true
   etherpad_hosts:
-    - id: "node_02"
+    - id: "node_03"
       host: "https://note.thanhnguyen.group"
       api_key: "thanhnguyen_etherpad_key_2026"      # Dùng cho API tạo Pad (Khắc phục lỗi 401 Unauthorized)
       client_id: "plugNmeet"                        # Dùng cho xác thực user OIDC
